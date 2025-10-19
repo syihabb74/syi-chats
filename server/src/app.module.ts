@@ -1,10 +1,8 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { Module } from '@nestjs/common';;
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import databaseConfig from './config/database.config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Auth } from './auth/auth.controller';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -19,9 +17,8 @@ import { Auth } from './auth/auth.controller';
         uri : configService.get('database.uri'),
         ...configService.get('database.options'),
       })
-    })
-  ],
-  controllers: [AppController, Auth],
-  providers: [AppService],
+    }),
+    AuthModule
+  ]
 })
 export class AppModule {}

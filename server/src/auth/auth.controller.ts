@@ -1,18 +1,24 @@
-import { Body, Controller, Post } from "@nestjs/common";
+import { Body, Controller, Post, Response as ResNest } from "@nestjs/common";
 import { CreateUserDto } from "./dto/create-user.dto";
+import { LoginUserDto } from "./dto/login-user.dto";
+import type { Response } from "express";
 
 
 
 
-@Controller()
-export class Auth {
+@Controller('auth')
+export class AuthController {
 
-
+    
 
     @Post('/login')
-    async login (@Body() createUser : CreateUserDto ) {
+    async login (@Body() loginDto : LoginUserDto, @ResNest() Res : Response ) {
 
         try {
+
+            console.log("Masuk login");
+
+            return Res.status(200).json({message : "login"})
             
         } catch (error) {
             
@@ -23,13 +29,14 @@ export class Auth {
     }
 
     @Post('/register') 
-    async register (@Body() createUser : CreateUserDto) {
-        
-        console.log(createUser)
+    async register (@Body() createDto : CreateUserDto, @ResNest() Res : Response) {
 
         try {
+
+            console.log("Masuk register")
             
-            console.log("masuk sini")
+
+            return Res.status(200).json({message : "register"})
 
         } catch (error) {
             
