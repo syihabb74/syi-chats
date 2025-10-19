@@ -2,6 +2,7 @@ import { Body, Controller, Post, Response as ResNest } from "@nestjs/common";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { LoginUserDto } from "./dto/login-user.dto";
 import type { Response } from "express";
+import { AuthService } from "./auth.service";
 
 
 
@@ -9,7 +10,7 @@ import type { Response } from "express";
 @Controller('auth')
 export class AuthController {
 
-    
+    constructor (private readonly authService : AuthService) {}
 
     @Post('/login')
     async login (@Body() loginDto : LoginUserDto, @ResNest() Res : Response ) {
@@ -33,14 +34,16 @@ export class AuthController {
 
         try {
 
-            console.log("Masuk register")
+            console.log("Mausk sini")
+
+            const newUser = await this.authService.signUp(createDto)
             
 
-            return Res.status(200).json({message : "register"})
+            return Res.status(200).json({message : newUser})
 
         } catch (error) {
             
-            console.log(error)
+            console.log(error);
 
         }
 
