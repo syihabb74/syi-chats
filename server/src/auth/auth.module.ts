@@ -6,6 +6,7 @@ import { User, userSchema } from "src/common/entities/user.schema";
 import { AuthRepository } from "./auth.repository";
 import { BcryptService } from "src/common/helpers/bcrypt.service";
 import { JwtService } from "src/common/helpers/jwt.service";
+import { RegexService } from "src/common/helpers/regex.format-email.service";
 
 @Module({
     imports : [
@@ -14,7 +15,7 @@ import { JwtService } from "src/common/helpers/jwt.service";
         ])
     ],
     controllers : [AuthController],
-    providers : [AuthService, AuthRepository, BcryptService, JwtService]
+    providers : [AuthService, AuthRepository, BcryptService, JwtService, RegexService]
 })
 
 export class AuthModule {}
