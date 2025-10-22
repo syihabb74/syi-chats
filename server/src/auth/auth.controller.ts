@@ -1,49 +1,37 @@
 import { Body, Controller, Post, Response as ResNest } from "@nestjs/common";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { LoginUserDto } from "./dto/login-user.dto";
-import type { Response } from "express";
 import { AuthService } from "./auth.service";
-
-
-
 
 @Controller('auth')
 export class AuthController {
 
-    constructor (private readonly authService : AuthService) {}
+    constructor(private readonly authService: AuthService) { }
 
     @Post('/login')
-    async login (@Body() loginDto : LoginUserDto, @ResNest() Res : Response ) {
+    async login(@Body() loginDto: LoginUserDto) {
 
         try {
 
-            console.log("Masuk login");
+            const token = await this.authService.signIn(loginDto);
+            return { access_token: token }
 
-            return Res.status(200).json({message : "login"})
-            
         } catch (error) {
-            
-            console.log(error)
-
+            throw error
         }
 
     }
 
-    @Post('/register') 
-    async register (@Body() createDto : CreateUserDto, @ResNest() Res : Response) {
+    @Post('/register')
+    async register(@Body() createDto: CreateUserDto) {
 
         try {
-
-            console.log("Mausk sini")
-
-            const newUser = await this.authService.signUp(createDto)
-            
-
-            return Res.status(200).json({message : newUser})
+            const register = await this.authService.signUp(createDto)
+            return { message: register }
 
         } catch (error) {
-            
-            console.log(error);
+
+            throw error
 
         }
 

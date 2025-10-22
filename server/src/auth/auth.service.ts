@@ -22,16 +22,21 @@ export class AuthService {
             ]
         )
         if (registeredEmail) throw new ConflictException('Email already registered');
-        if (registeredUname) throw new ConflictException('Username already registered')
+        if (registeredUname) throw new ConflictException('Username already registered');
         user.password = this.bcryptService.hashPassword(user.password);
-        return this.authRepository.register(user)
+        this.authRepository.register(user)
+        return 'Register Successfully';
 
     }
 
     async signIn(user: IUserLogin) {
 
+
+        console.log("Masuk sini ")
+
         const isEmailLogin = this.regexService.emailChecker(user.identifier);
         const userLogin = isEmailLogin ? await this.authRepository.findOneByEmail(user.identifier) : await this.authRepository.findOneByUsername(user.identifier);
+        console.log(userLogin)
         if (!userLogin) throw new BadRequestException('Please register first');
         const validPassword = this.bcryptService.comparePassword(user.password, userLogin.password);
         if (!validPassword) throw new BadRequestException('Invalid email / password');

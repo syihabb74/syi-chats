@@ -12,7 +12,7 @@ export class AuthRepository {
     constructor(@InjectModel(User.name) private userModel: Model<User>) {
 
     }
-    
+
     async register(newUser : IUserRegister) : Promise<User> {
         const createUser = new this.userModel(newUser);
         return createUser.save()
@@ -21,14 +21,19 @@ export class AuthRepository {
 
     async findOneByEmail(email: string) : Promise<User | null> {
 
-        return this.userModel.findOne({email}).lean()
+        console.log(email, "<<<<<< USERNAME")
+
+        return this.userModel.findOne({email}).select('-createdAt -updatedAt').lean();
 
     }
 
 
     async findOneByUsername(username : string) : Promise<User | null> {
 
-        return this.userModel.findOne({username}).lean()
+
+        console.log(username, "<<<<< USERNAME")
+
+        return this.userModel.findOne({username}).select('-createdAt -updatedAt').lean();
 
     }
 
