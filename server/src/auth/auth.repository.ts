@@ -12,10 +12,25 @@ export class AuthRepository {
     constructor(@InjectModel(User.name) private userModel: Model<User>) {
 
     }
-
+    
     async register(newUser : IUserRegister) : Promise<User> {
         const createUser = new this.userModel(newUser);
         return createUser.save()
     }
+
+
+    async findOneByEmail(email: string) : Promise<User | null> {
+
+        return this.userModel.findOne({email}).lean()
+
+    }
+
+
+    async findOneByUsername(username : string) : Promise<User | null> {
+
+        return this.userModel.findOne({username}).lean()
+
+    }
+
 
 }
