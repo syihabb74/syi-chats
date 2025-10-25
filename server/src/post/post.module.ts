@@ -1,7 +1,5 @@
 import { Module } from "@nestjs/common";
 
-
-
 @Module({
     imports : [],
     controllers : [],
@@ -9,6 +7,4 @@ import { Module } from "@nestjs/common";
 })
 
 
-
-
-export class ChatModule {}
+export class PostModule{}
