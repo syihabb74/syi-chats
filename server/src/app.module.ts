@@ -33,7 +33,9 @@ import { ChatModule } from './chat/chat.module';
         ...configService.get('database.options'),
       })
     }),
-    AuthModule
+    AuthModule,
+    PostModule,
+    ChatModule
   ],
   providers : [
     {
