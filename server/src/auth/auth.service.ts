@@ -11,11 +11,11 @@ import { JwtService } from "src/common/helpers/jwt.service";
 @Injectable()
 export class AuthService {
 
-    constructor(private readonly authRepository: AuthRepository, private readonly bcryptService: BcryptService, private readonly regexService: RegexService, private readonly jwtService : JwtService) { }
+    constructor(private readonly authRepository: AuthRepository, private readonly bcryptService: BcryptService, private readonly regexService: RegexService, private readonly jwtService: JwtService) { }
 
     async signUp(user: IUserRegister) {
 
-        const [registeredEmail,registeredUname ] = await Promise.all(
+        const [registeredEmail, registeredUname] = await Promise.all(
             [
                 this.authRepository.findOneByEmail(user.email),
                 this.authRepository.findOneByUsername(user.username)
@@ -31,16 +31,18 @@ export class AuthService {
 
     async signIn(user: IUserLogin) {
 
-
-        console.log("Masuk sini ")
-
         const isEmailLogin = this.regexService.emailChecker(user.identifier);
         const userLogin = isEmailLogin ? await this.authRepository.findOneByEmail(user.identifier) : await this.authRepository.findOneByUsername(user.identifier);
         console.log(userLogin)
         if (!userLogin) throw new BadRequestException('Please register first');
         const validPassword = this.bcryptService.comparePassword(user.password, userLogin.password);
         if (!validPassword) throw new BadRequestException('Invalid email / password');
-        return this.jwtService.signToken({_id : userLogin._id.toString() , username : userLogin.username})   
+        const access_token = this.jwtService.signToken({ _id: userLogin._id.toString(), identifier: isEmailLogin ? userLogin.email : userLogin.username });
+        const refresh_token = this.jwtService.signToken({ _id: userLogin._id.toString(), identifier: isEmailLogin ? userLogin.email : userLogin.username });
+        return {
+            access_token,
+            refresh_token
+        }
 
     }
 
