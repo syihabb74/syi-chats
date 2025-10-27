@@ -6,11 +6,19 @@ import {
 import databaseConfig from './config/database.config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
+import { APP_GUARD } from '@nestjs/core';
 import { PostModule } from './post/post.module';
 import { ChatModule } from './chat/chat.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot({
+      throttlers: [
+        { name: 'default', ttl: 60000, limit: 10 },
+      ],
+    })
+    ,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig],
@@ -26,6 +34,12 @@ import { ChatModule } from './chat/chat.module';
     AuthModule,
     PostModule,
     ChatModule
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard
+    }
   ]
 })
 export class AppModule { }

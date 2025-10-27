@@ -8,8 +8,7 @@ export type UserDocument = User & Document;
     versionKey : false
 })
 export class User {
-
-    @Prop()
+    
     _id!: Types.ObjectId;
 
     @Prop({

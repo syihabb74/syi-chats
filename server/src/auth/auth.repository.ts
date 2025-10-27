@@ -21,8 +21,6 @@ export class AuthRepository {
 
     async findOneByEmail(email: string) : Promise<User | null> {
 
-        console.log(email, "<<<<<< USERNAME")
-
         return this.userModel.findOne({email}).select('-createdAt -updatedAt').lean();
 
     }

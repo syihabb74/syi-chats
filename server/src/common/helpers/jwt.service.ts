@@ -21,7 +21,7 @@ export class JwtService {
     const jwt = await new jose.SignJWT(payload)
       .setProtectedHeader({ alg })
       .setIssuedAt()
-      .setExpirationTime('2h')
+      .setExpirationTime('15m')
       .sign(secret)
 
       return jwt

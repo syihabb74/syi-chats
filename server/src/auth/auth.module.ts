@@ -7,6 +7,7 @@ import { AuthRepository } from "./auth.repository";
 import { BcryptService } from "src/common/helpers/bcrypt.service";
 import { JwtService } from "src/common/helpers/jwt.service";
 import { RegexService } from "src/common/helpers/regex.format-email.service";
+import { AuthGuard } from "./auth.guard";
 
 
 @Module({
