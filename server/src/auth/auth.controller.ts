@@ -1,13 +1,20 @@
-import { Body, Controller, Post, Response as ResNest } from "@nestjs/common";
+import {
+    Body,
+    Controller,
+    HttpCode,
+    Post 
+} from "@nestjs/common";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { LoginUserDto } from "./dto/login-user.dto";
 import { AuthService } from "./auth.service";
+import { Throttle } from "@nestjs/throttler";
 
 @Controller('/auth')
 export class AuthController {
 
     constructor(private readonly authService: AuthService) { }
 
+    @Throttle({default : {limit : 3, ttl: 60000}})
     @Post('/login')
     async login(@Body() loginDto: LoginUserDto) {
 
@@ -22,7 +29,9 @@ export class AuthController {
 
     }
 
+    @Throttle({default : {limit : 3, ttl: 60000}})
     @Post('/register')
+    @HttpCode(201)
     async register(@Body() createDto: CreateUserDto) {
 
         try {

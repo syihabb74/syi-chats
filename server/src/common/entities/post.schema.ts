@@ -11,6 +11,7 @@ export type PostDocument = Post & Document
 
 export class Post {
 
+    @Prop()
     _id! : Types.ObjectId;
 
     @Prop({
@@ -20,16 +21,25 @@ export class Post {
     content! : string
 
     @Prop({
-        required : false
+        type : [String], default : []
     })
-    tags : string[]
+    tags? : string[]
 
     @Prop({
-        required : false
+        type : [
+            {
+                url : {type: String, required : true},
+                type : {type : String},
+                alt : {type : String}
+            }
+        ],
+        default : []
     })
-    media : string[]
+    media? : {url : string; type?: string, alt? : string}[]
 
     @Prop({
+        type : Types.ObjectId, 
+        ref : 'User', 
         required : true
     })
     senderId! : Types.ObjectId 
