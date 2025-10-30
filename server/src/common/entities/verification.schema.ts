@@ -4,7 +4,8 @@ import { Document, Types } from "mongoose";
 export type VerificationDocument = Verification & Document
 
 @Schema({
-    _id : false
+    _id : false,
+    versionKey : false
 })
 
 export class Verification {

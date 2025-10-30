@@ -33,16 +33,23 @@ export class AuthService {
 
         const isEmailLogin = this.regexService.emailChecker(user.identifier);
         const userLogin = isEmailLogin ? await this.authRepository.findOneByEmail(user.identifier) : await this.authRepository.findOneByUsername(user.identifier);
-        console.log(userLogin)
         if (!userLogin) throw new BadRequestException('Please register first');
         const validPassword = this.bcryptService.comparePassword(user.password, userLogin.password);
         if (!validPassword) throw new BadRequestException('Invalid email / password');
-        const access_token = this.jwtService.signToken({ _id: userLogin._id.toString(), identifier: isEmailLogin ? userLogin.email : userLogin.username });
-        const refresh_token = this.jwtService.signToken({ _id: userLogin._id.toString(), identifier: isEmailLogin ? userLogin.email : userLogin.username });
+        const identifier = isEmailLogin ? userLogin.email : userLogin.username;
+        const access_token = this.jwtService.signToken({ _id: userLogin._id.toString(), identifier });
+        const refresh_token = await this.jwtService.signToken({ _id: userLogin._id.toString(), identifier });
         return {
             access_token,
             refresh_token
         }
+
+    }
+
+
+    async refresherTokenSave (refresh_token : string) {
+
+      
 
     }
 

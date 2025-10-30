@@ -23,6 +23,7 @@ export class AuthController {
         try {
 
             const token = await this.authService.signIn(loginDto);
+            this.authService.refresherTokenSave(token.refresh_token);
             return token
 
         } catch (error) {
