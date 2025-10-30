@@ -24,12 +24,11 @@ export class AuthService {
         if (registeredEmail) throw new ConflictException('Email already registered');
         if (registeredUname) throw new ConflictException('Username already registered');
         user.password = this.bcryptService.hashPassword(user.password);
-        this.authRepository.register(user)
-        return 'Register Successfully';
-
+        return this.authRepository.register(user)
+        
     }
 
-    async signIn(user: IUserLogin) {
+    async signIn(user: IUserLogin): Promise<{ access_token: string, refresh_token: string }> {
 
         const isEmailLogin = this.regexService.emailChecker(user.identifier);
         const userLogin = isEmailLogin ? await this.authRepository.findOneByEmail(user.identifier) : await this.authRepository.findOneByUsername(user.identifier);
@@ -37,8 +36,12 @@ export class AuthService {
         const validPassword = this.bcryptService.comparePassword(user.password, userLogin.password);
         if (!validPassword) throw new BadRequestException('Invalid email / password');
         const identifier = isEmailLogin ? userLogin.email : userLogin.username;
-        const access_token = this.jwtService.signToken({ _id: userLogin._id.toString(), identifier });
-        const refresh_token = await this.jwtService.signToken({ _id: userLogin._id.toString(), identifier });
+        const [access_token, refresh_token] = await Promise.all(
+            [
+                this.jwtService.signToken({ _id: userLogin._id.toString(), identifier }, "15m"),
+                this.jwtService.signToken({ _id: userLogin._id.toString(), identifier }, "7d")
+            ]
+        )
         return {
             access_token,
             refresh_token
@@ -47,9 +50,9 @@ export class AuthService {
     }
 
 
-    async refresherTokenSave (refresh_token : string) {
+    async refresherTokenSave(refresh_token: string) {
 
-      
+
 
     }
 

@@ -27,7 +27,9 @@ export class AuthController {
             return token
 
         } catch (error) {
+
             throw error
+            
         }
 
     }

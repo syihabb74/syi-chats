@@ -13,7 +13,7 @@ import IPayload from '../interfaces/payload.interfaces';
 export class JwtService {
 
 
-  async signToken(payload : IPayload) : Promise<string> {
+  async signToken(payload : IPayload, expireTime : string) : Promise<string> {
 
     const secret = new TextEncoder().encode(process.env.JOSE_SECRET_KEY);
     const alg = 'HS256';
@@ -21,7 +21,7 @@ export class JwtService {
     const jwt = await new jose.SignJWT(payload)
       .setProtectedHeader({ alg })
       .setIssuedAt()
-      .setExpirationTime('15m')
+      .setExpirationTime(expireTime)
       .sign(secret)
 
       return jwt

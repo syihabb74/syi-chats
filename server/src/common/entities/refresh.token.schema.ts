@@ -24,16 +24,23 @@ export class Refresh {
     required : true,
     default : Date.now
    })
-   created_at : string
+    created_at : Date
+
+    @Prop({
+     type : Date,
+     required : true
+    })
+    expires_at : Date
 
    @Prop({
-    type : Date,
+    type : Boolean,
     required : true,
-    index : {expires : 0}
+    default : false
    })
-   expires_at : string
+   is_used : boolean
 
 }
 
 
 export const refreshSchema = SchemaFactory.createForClass(Refresh)
+refreshSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
