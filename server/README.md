@@ -1,3 +1,81 @@
+# SYI Chats — Server
+
+This folder contains the NestJS server for the SYI Chats project.
+
+This README covers quick setup, environment variables, running, and important implementation notes about JWT refresh tokens and MongoDB TTL indexes used for automatic refresh-token cleanup.
+
+## Requirements
+
+- Node.js (>= 18 recommended)
+- npm or yarn
+- MongoDB (local or remote)
+
+## Quick setup
+
+1. Install dependencies
+
+```bash
+npm install
+```
+
+2. Create a `.env` file (or set environment variables in your environment). Minimal variables the app expects:
+
+```
+JOSE_SECRET_KEY=your_jose_secret_here
+DATABASE_URI=mongodb://localhost:27017/your-db
+```
+
+3. Start in development mode
+
+```bash
+npm run start:dev
+```
+
+4. Build and run production
+
+```bash
+npm run build
+npm run start:prod
+```
+
+## Important notes — refresh tokens and TTL
+
+- The project stores refresh tokens in a Mongoose model named `Refresher` (see `src/common/entities/refresher.token.schema.ts`).
+- The schema defines an `expires_at` (Date) field and a single-field TTL index on that field:
+
+```ts
+// single-field TTL index — MongoDB TTL monitor requires a single Date field index
+refresherSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
+```
+
+- The application verifies refresh JWTs (using `jose`) and extracts the `exp` claim (expiration time in seconds). The service stores `expires_at` using that `exp` value (converted to a JS `Date`) so MongoDB will remove the document when the token expires.
+
+- MongoDB runs the TTL monitor periodically (approximately every 60 seconds), so deletion may be slightly delayed after `expires_at`.
+
+- Note about indexes in production: if your Mongoose connection is configured with `autoIndex: false` (common for production), Mongoose will not create indexes automatically at startup. To guarantee TTL index creation on production, either:
+
+  - Create the index manually in the database, or
+  - Call `Model.syncIndexes()` once at startup for the `Refresher` model, or
+  - Enable index creation in deployment tooling.
+
+## JWT configuration
+
+- JWTs are created using `jose` (see `src/common/helpers/jwt.service.ts`). The service signs tokens with `JOSE_SECRET_KEY` and sets expiration using human-friendly strings (e.g., `"15m"`, `"7d"`).
+- The refresh token's `exp` is used as the canonical expiration for the corresponding refresh document's `expires_at` to keep token expiry and DB TTL in sync.
+
+## Useful scripts
+
+- `npm run start:dev` — run in watch/dev mode
+- `npm run build` — compile to `dist/`
+- `npm run start:prod` — run production build
+
+## Next steps / suggestions
+
+- If you want stricter management of refresh tokens, implement an endpoint that marks a refresh token `is_used: true` when it's consumed and check that flag on reuse.
+- Add `Model.syncIndexes()` to an initialization step if you need to ensure indexes are created automatically in production.
+- Consider keeping secrets (like `JOSE_SECRET_KEY`) in a secrets manager for production deployments.
+
+If you'd like, I can also add a short note to the repository root README linking to this server README — tell me where you'd like it.
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>

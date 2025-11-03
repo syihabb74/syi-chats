@@ -13,8 +13,10 @@ export class Refresher {
     _id! : Types.ObjectId
 
     @Prop({
-        type : String,
-        required : true
+     type : String,
+     required : true,
+     index : true,
+     unique : true
     })
     identifier : string
 
@@ -50,4 +52,4 @@ export class Refresher {
 
 
 export const refresherSchema = SchemaFactory.createForClass(Refresher);
-refresherSchema.index({identifier : 1, expires_at: 1 }, {unique : true, expireAfterSeconds: 0 });
+refresherSchema.index({expires_at: 1 }, {expireAfterSeconds: 0 });

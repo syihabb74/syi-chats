@@ -11,7 +11,13 @@ import { JwtService } from "src/common/helpers/jwt.service";
 @Injectable()
 export class AuthService {
 
-    constructor(private readonly authRepository: AuthRepository, private readonly bcryptService: BcryptService, private readonly regexService: RegexService, private readonly jwtService: JwtService) { }
+    constructor( 
+        private readonly authRepository: AuthRepository,
+        private readonly bcryptService: BcryptService,
+        private readonly regexService: RegexService,
+        private readonly jwtService: JwtService
+    ) 
+        { }
 
     async signUp(user: IUserRegister) {
 
