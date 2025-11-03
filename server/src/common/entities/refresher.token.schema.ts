@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
-import { Refresh, refreshSchema } from "./refresh.token.schema";
 
 export type RefresherDocument = Refresher & Document
 
@@ -11,20 +10,44 @@ export type RefresherDocument = Refresher & Document
 
 export class Refresher {
 
-    @Prop({
-        unique : true,
-        required : true
-    })
-    _id! : string
+    _id! : Types.ObjectId
 
     @Prop({
-        type : refreshSchema
+        type : String,
+        required : true
     })
-    refresh_token : Refresh
+    identifier : string
+
+    @Prop({
+    type : String,
+    required : true,
+    unique : true
+   })
+   token : string
+
+   @Prop({
+    type : Date,
+    required : true,
+    default : Date.now
+   })
+    created_at : Date
+
+    @Prop({
+     type : Date,
+     required : true
+    })
+    expires_at : Date
+
+   @Prop({
+    type : Boolean,
+    required : true,
+    default : false
+   })
+   is_used : boolean
 
 
 }
 
 
 export const refresherSchema = SchemaFactory.createForClass(Refresher);
-refresherSchema.index({_id: 1})
+refresherSchema.index({identifier : 1, expires_at: 1 }, {unique : true, expireAfterSeconds: 0 });
