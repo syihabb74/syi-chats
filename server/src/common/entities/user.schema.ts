@@ -1,12 +1,18 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
-import { Verification, verificationSchema } from "./verification.schema";
 
 export type UserDocument = User & Document;
 
 @Schema({
     timestamps : true,
-    versionKey : false
+    versionKey : false,
+    toJSON : {
+        transform : (doc: Record<string, any>, ret: Record<string, any>) => {
+            delete ret.password;
+            delete ret.__v;
+            return ret
+        }   
+    }
 })
 export class User {
     
@@ -46,21 +52,10 @@ export class User {
 
     @Prop({
         type : Boolean,
+        required : true,
         default : false
     })
-    emailVerified : boolean
-
-    // @Prop({
-    //     type : Boolean,
-    //     default : false
-    // })
-    // phoneVerified : boolean 
-    // phoneVerified must to be moved to profile user
-
-    @Prop({
-        type : verificationSchema
-    })
-    verification : Verification
+    is_verified : boolean
     
 
 }

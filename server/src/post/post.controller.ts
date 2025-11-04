@@ -1,11 +1,11 @@
 import { Controller, Get, UseGuards } from "@nestjs/common";
 import { AuthGuard } from "src/auth/auth.guard";
 
-@Controller('/posts')
+@Controller('posts')
 export class PostController {
 
     @UseGuards(AuthGuard)
-    @Get('/')
+    @Get()
     async getPosts () {
 
         return ['a', 'b', 'c']

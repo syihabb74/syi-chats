@@ -12,12 +12,12 @@ import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 
 @UseGuards(ThrottlerGuard)
 @Throttle({default : {limit : 10, ttl: 60000}})
-@Controller('/auth')
+@Controller('auth')
 export class AuthController {
 
     constructor(private readonly authService: AuthService) { }
 
-    @Post('/login')
+    @Post('login')
     async login(@Body() loginDto: LoginUserDto) {
 
         try {
@@ -34,11 +34,10 @@ export class AuthController {
 
     }
 
-    @Post('/register')
+    @Post('register')
     @HttpCode(201)
     async register(@Body() createDto: CreateUserDto) {
-
-        console.log("masuk register")
+        
         try {
             const register = await this.authService.signUp(createDto)
             return { message: register }
@@ -50,6 +49,8 @@ export class AuthController {
         }
 
     }
+
+
 
 
 

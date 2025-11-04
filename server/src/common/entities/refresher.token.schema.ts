@@ -25,14 +25,7 @@ export class Refresher {
     required : true,
     unique : true
    })
-   token : string
-
-   @Prop({
-    type : Date,
-    required : true,
-    default : Date.now
-   })
-    created_at : Date
+   refresh_token : string
 
     @Prop({
      type : Date,
@@ -52,4 +45,4 @@ export class Refresher {
 
 
 export const refresherSchema = SchemaFactory.createForClass(Refresher);
-refresherSchema.index({expires_at: 1 }, {expireAfterSeconds: 0 });
+refresherSchema.index({expires_at: 1}, {expireAfterSeconds: 0 });

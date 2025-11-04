@@ -31,4 +31,4 @@ export class Verification {
 }
 
 
-export const verificationSchema = SchemaFactory.createForClass(Verification)
+export const verificationSchema = SchemaFactory.createForClass(Verification);

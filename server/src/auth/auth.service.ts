@@ -1,10 +1,11 @@
-import { BadRequestException, ConflictException, Injectable } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable } from "@nestjs/common";
 import IUserLogin from "src/common/interfaces/user.login.interfaces";
 import IUserRegister from "src/common/interfaces/user.register.interfaces";
 import { AuthRepository } from "./auth.repository";
 import { BcryptService } from "src/common/helpers/bcrypt.service";
 import { RegexService } from "src/common/helpers/regex.format-email.service";
 import { JwtService } from "src/common/helpers/jwt.service";
+import IUser from "src/common/interfaces/user.interface";
 
 
 
@@ -37,10 +38,11 @@ export class AuthService {
     async signIn(user: IUserLogin): Promise<{ access_token: string, refresh_token: string }> {
 
         const isEmailLogin = this.regexService.emailChecker(user.identifier);
-        const userLogin = isEmailLogin ? await this.authRepository.findOneByEmail(user.identifier) : await this.authRepository.findOneByUsername(user.identifier);
+        const userLogin : IUser | null = isEmailLogin ? await this.authRepository.findOneByEmail(user.identifier) : await this.authRepository.findOneByUsername(user.identifier);
         if (!userLogin) throw new BadRequestException('Please register first');
         const validPassword = this.bcryptService.comparePassword(user.password, userLogin.password);
         if (!validPassword) throw new BadRequestException('Invalid email / password');
+        if (!userLogin.is_verified) throw new ForbiddenException("Please verify your account");
         const identifier = isEmailLogin ? userLogin.email : userLogin.username;
         const [access_token, refresh_token] = await Promise.all(
             [
