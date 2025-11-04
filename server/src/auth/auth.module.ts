@@ -8,6 +8,7 @@ import { BcryptService } from "src/common/helpers/bcrypt.service";
 import { JwtService } from "src/common/helpers/jwt.service";
 import { RegexService } from "src/common/helpers/regex.format-email.service";
 import { Refresher, refresherSchema } from "src/common/entities/refresher.token.schema";
+import { UserModule } from "src/user/user.module";
 
 
 @Module({
@@ -17,10 +18,11 @@ import { Refresher, refresherSchema } from "src/common/entities/refresher.token.
         ]),
         MongooseModule.forFeature([
             {name : Refresher.name, schema : refresherSchema}
-        ])
+        ]),
+        UserModule
     ],
     controllers : [AuthController],
-    providers : [AuthService, AuthRepository, BcryptService, JwtService, RegexService]
+    providers : [AuthService, AuthRepository, BcryptService, JwtService, RegexService],
 })
 
 export class AuthModule {}
