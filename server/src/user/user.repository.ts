@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
-import { User } from "src/common/entities/user.schema";
+import { User } from "src/user/schemas/user.schema";
 import IUserRegister from "src/common/interfaces/user.register.interfaces";
 
 
@@ -22,7 +22,7 @@ export class UserRepository {
 
     async findOneByEmail(email: string) : Promise<User | null> {
 
-        return await this.userModel.findOne({email}).select('-createdAt -updatedAt').lean();
+        return this.userModel.findOne({email}).select('-createdAt -updatedAt').lean();
 
     }
 
@@ -30,7 +30,7 @@ export class UserRepository {
     async findOneByUsername(username : string) : Promise<User | null> {
 
 
-        return await this.userModel.findOne({username}).select('-createdAt -updatedAt').lean();
+        return this.userModel.findOne({username}).select('-createdAt -updatedAt').lean();
 
     }
 

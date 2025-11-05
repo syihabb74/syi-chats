@@ -4,8 +4,8 @@ import { Document, Types } from "mongoose";
 export type VerificationDocument = Verification & Document
 
 @Schema({
-    _id : false,
-    versionKey : false
+    versionKey : false,
+    timestamps : false
 })
 
 export class Verification {
@@ -18,9 +18,16 @@ export class Verification {
 
     @Prop({
         type : String,
+        required : true,
+        index : true
+    })
+    verification_identity : string
+
+    @Prop({
+        type : String,
         required : true
     })
-    code : string
+    verification_code : string
 
     @Prop({
         type : Number,
@@ -28,7 +35,21 @@ export class Verification {
     })
     attempts : number
 
+    @Prop({
+        type : Date,
+        required : true
+    })
+    expires_at : Date
+
+    @Prop({
+        type : Boolean,
+        required : true,
+        default : false
+    })
+    is_used : Boolean
+
 }
 
 
 export const verificationSchema = SchemaFactory.createForClass(Verification);
+verificationSchema.index({expires_at : 1}, {expireAfterSeconds : 0});

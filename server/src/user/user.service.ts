@@ -6,7 +6,7 @@ import {
  } from "@nestjs/common";
 import IUserLogin from "src/common/interfaces/user.login.interfaces";
 import IUserRegister from "src/common/interfaces/user.register.interfaces";
-import IUser from "src/common/interfaces/user.interface";
+import IUser from "src/user/interfaces/user.interface";
 import { BcryptService } from "src/common/helpers/bcrypt.service";
 import { RegexService } from "src/common/helpers/regex.format-email.service";
 import { JwtService } from "src/common/helpers/jwt.service";
@@ -41,7 +41,7 @@ export class UserService {
         async signIn(user: IUserLogin): Promise<{ access_token: string, refresh_token: string }> {
     
             const isEmailLogin = this.regexService.emailChecker(user.identifier);
-            const userLogin : IUser | null = isEmailLogin ? await this.userRepository.findOneByEmail(user.identifier) : await this.userRepository.findOneByUsername(user.identifier);
+            const userLogin : Omit<IUser, 'createdAt' | 'updatedAt' > | null = isEmailLogin ? await this.userRepository.findOneByEmail(user.identifier) : await this.userRepository.findOneByUsername(user.identifier);
             if (!userLogin) throw new BadRequestException('Please register first');
             const validPassword = this.bcryptService.comparePassword(user.password, userLogin.password);
             if (!validPassword) throw new BadRequestException('Invalid email / password');

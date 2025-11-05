@@ -5,8 +5,8 @@ import {
     Post, 
     UseGuards
 } from "@nestjs/common";
-import { CreateUserDto } from "./dto/create-user.dto";
-import { LoginUserDto } from "./dto/login-user.dto";
+import { CreateUserDto } from "../user/dto/create-user.dto";
+import { LoginUserDto } from "../user/dto/login-user.dto";
 import { AuthService } from "./auth.service";
 import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 
@@ -53,7 +53,7 @@ export class AuthController {
     @Post('verify')
     @HttpCode(200)
     async verifyAccount () {
-
+        
     }
 
 

@@ -1,8 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
-import { Refresher } from "src/common/entities/refresher.token.schema";
-import IRefresher from "src/common/interfaces/refresher.interfaces";
+import { Refresher } from "src/auth/interfaces/refresher.token.schema";
+import IRefresher from "src/auth/interfaces/refresher.interfaces";
+import { Verification } from "./schemas/verification.schema";
+import IVerification from "./interfaces/verification.interface";
 
 
 
@@ -10,14 +12,28 @@ import IRefresher from "src/common/interfaces/refresher.interfaces";
 export class AuthRepository {
 
     constructor(
-        @InjectModel(Refresher.name) private refresherModel : Model<Refresher>) {
+        @InjectModel(Refresher.name) private readonly refresherModel : Model<Refresher>,
+        @InjectModel(Verification.name) private readonly verificationModel : Model<Verification>
+    ) { }
 
-    }
-
-    async saveRefreshToken(refresh_token : IRefresher) {
+    async saveRefreshToken(refresh_token : IRefresher) : Promise<Refresher> {
 
         const createRefresher = new this.refresherModel(refresh_token)
         return createRefresher.save();
+
+    }
+
+    async saveVerificationCode (verification : IVerification) : Promise<Verification> {
+
+        const createVerificationCode = new this.verificationModel(verification);
+        return createVerificationCode.save();
+
+    }
+
+    async findCodeVerificationByEmail (email : string) : Promise<Verification | null> {
+
+        return this.verificationModel.findOne({verification_identity : email, is_used : false});
+   
 
     }
 
