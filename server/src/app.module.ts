@@ -15,7 +15,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
   imports: [
     ThrottlerModule.forRoot({
       throttlers: [
-        { name: 'default', ttl: 60000, limit: 10 },
+        { name: 'auth', ttl: 60000, limit: 10 },
       ],
     })
     ,

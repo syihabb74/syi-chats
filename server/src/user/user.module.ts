@@ -8,13 +8,25 @@ import { UserService } from "./user.service";
 import { UserRepository } from "./user.repository";
 
 @Module({
-    imports : [
+    imports: [
         MongooseModule.forFeature([
-            {name : User.name, schema : userSchema}
+            { name: User.name, schema: userSchema }
         ])
     ],
-    providers : [JwtService, BcryptService, RegexService, UserService, UserRepository],
-    exports : [JwtService, BcryptService, RegexService, UserService, UserRepository]
+    providers: [
+        JwtService,
+        BcryptService,
+        RegexService,
+        UserService,
+        UserRepository
+    ],
+    exports: [
+        JwtService,
+        BcryptService,
+        RegexService,
+        UserService,
+        UserRepository
+    ]
 })
 
-export class UserModule {}
+export class UserModule { }

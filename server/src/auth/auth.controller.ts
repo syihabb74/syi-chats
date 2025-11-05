@@ -11,7 +11,7 @@ import { AuthService } from "./auth.service";
 import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 
 @UseGuards(ThrottlerGuard)
-@Throttle({default : {limit : 10, ttl: 60000}})
+@Throttle({auth : {limit : 10, ttl: 60000}})
 @Controller('auth')
 export class AuthController {
 
@@ -36,17 +36,23 @@ export class AuthController {
 
     @Post('register')
     @HttpCode(201)
-    async register(@Body() createDto: CreateUserDto) {
+    async register(@Body() createDto: CreateUserDto) : Promise<Record<string, any>> {
         
         try {
-            const register = await this.authService.signUp(createDto)
-            return { message: register }
+            await this.authService.signUp(createDto)
+            return { message: "Register Successfully" }
 
         } catch (error) {
 
             throw error
 
         }
+
+    }
+
+    @Post('verify')
+    @HttpCode(200)
+    async verifyAccount () {
 
     }
 

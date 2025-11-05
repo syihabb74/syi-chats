@@ -10,6 +10,9 @@ export type UserDocument = User & Document;
         transform : (doc: Record<string, any>, ret: Record<string, any>) => {
             delete ret.password;
             delete ret.__v;
+            delete ret.createdAt;
+            delete ret.updatedAt;
+            delete ret.is_verified;
             return ret
         }   
     }

@@ -8,7 +8,7 @@ export class PostController {
     @Get()
     async getPosts () {
 
-        return ['a', 'b', 'c']
+        return {message :['a', 'b', 'c']}
 
     }
 

@@ -14,15 +14,23 @@ import { UserModule } from "src/user/user.module";
 @Module({
     imports : [
         MongooseModule.forFeature([
-            {name : User.name, schema : userSchema}
+            { name : User.name, schema : userSchema }
         ]),
         MongooseModule.forFeature([
-            {name : Refresher.name, schema : refresherSchema}
+            { name : Refresher.name, schema : refresherSchema}
         ]),
         UserModule
     ],
-    controllers : [AuthController],
-    providers : [AuthService, AuthRepository, BcryptService, JwtService, RegexService],
+    controllers : [
+        AuthController
+    ],
+    providers : [
+        AuthService, 
+        AuthRepository,
+        BcryptService,
+        JwtService,
+        RegexService
+    ],
 })
 
 export class AuthModule {}
