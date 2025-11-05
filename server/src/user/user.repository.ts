@@ -1,6 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
+import { 
+    Model,
+    UpdateResult
+} from "mongoose";
 import { User } from "src/user/schemas/user.schema";
 import IUserRegister from "src/common/interfaces/user.register.interfaces";
 
@@ -31,6 +34,13 @@ export class UserRepository {
 
 
         return this.userModel.findOne({username}).select('-createdAt -updatedAt').lean();
+
+    }
+
+
+    async activateAccount(email : string) : Promise<UpdateResult> {
+
+        return this.userModel.updateOne({email}, {is_verified : true}).lean().exec()
 
     }
 

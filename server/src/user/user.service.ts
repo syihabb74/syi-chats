@@ -60,4 +60,10 @@ export class UserService {
     
         }
 
+        async activatingAccount (email: string) : Promise<void> {
+
+            await this.userRepository.activateAccount(email)
+
+        }
+
 }

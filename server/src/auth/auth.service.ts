@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import IUserLogin from "src/common/interfaces/user.login.interfaces";
 import IUserRegister from "src/common/interfaces/user.register.interfaces";
 import { UserService } from "src/user/user.service";
@@ -57,9 +57,14 @@ export class AuthService {
 
     }
 
-    async activateAccount (email : string,verification_code : string) {
+    async activateAccount (email : string,verification_code : string): Promise<string> {
 
-        const verification = await this.authRepository.findCodeVerificationByEmail(email)
+        const verification = await this.authRepository.findCodeVerificationByEmail(email);
+        if (!verification) throw new BadRequestException("Invalid code");
+        if (verification.verification_code !== verification_code) throw new BadRequestException("Incorrect verification code");
+        this.userService.activatingAccount(email);
+        this.authRepository.changeIsUsedStatus(email);
+        return 'Your account is activated now'
 
     }
 
