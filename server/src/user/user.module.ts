@@ -21,6 +21,7 @@ import { UserRepository } from "./user.repository";
         UserRepository
     ],
     exports: [
+        UserRepository,
         UserService,
     ]
 })

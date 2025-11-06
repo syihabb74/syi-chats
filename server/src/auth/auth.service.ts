@@ -6,6 +6,8 @@ import { AuthRepository } from "./auth.repository";
 import IVerification from "./interfaces/verification.interface";
 import generateRandomSixDigitCode from "src/common/utils/generateRandomCode";
 import { ResendService } from "src/common/resend/resend.service";
+import { RegexService } from "src/common/helpers/regex.format-email.service";
+import { UserRepository } from "src/user/user.repository";
 
 
 
@@ -15,7 +17,9 @@ export class AuthService {
     constructor( 
         private readonly userService : UserService,
         private readonly authRepository : AuthRepository,
-        private readonly resendService : ResendService
+        private readonly resendService : ResendService,
+        private readonly regexService : RegexService,
+        private readonly userRepository : UserRepository
     ) 
         { }
 
@@ -58,9 +62,16 @@ export class AuthService {
 
     }
 
-    async activateAccount (email : string,verification_code : string): Promise<string> {
-
-        const verification = await this.authRepository.findCodeVerificationByEmail(email);
+    async activateAccountEmail (email : string,verification_code : string): Promise<string> {
+        const isEmail = this.regexService.emailChecker(email);
+        if (!isEmail) throw new BadRequestException('email is invalid format');
+        const [verification, emailExist] = await Promise.all([
+            this.authRepository.findCodeVerificationByEmail(email),
+            this.userRepository.findOneByEmail(email)
+            
+        ]);
+        if (!emailExist) throw new BadRequestException("please register first");
+        if (emailExist.is_verified) throw new BadRequestException("you already verified");
         if (!verification) throw new BadRequestException("Invalid code");
         if (verification.attempts >= 5) throw new BadRequestException("Limit exceed please request code again");
         if (verification.verification_code !== verification_code) {

@@ -13,7 +13,7 @@ import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 import { VerificationDto } from "./dto/verification.dto";
 
 @UseGuards(ThrottlerGuard)
-@Throttle({auth : {limit : 10, ttl: 60000}})
+@Throttle({auth : {limit : 100, ttl: 60000}})
 @Controller('auth')
 export class AuthController {
 
@@ -60,7 +60,7 @@ export class AuthController {
     ) : Promise<string> {
         try {
             const {verification_code} = verificationDto
-            const verification = await this.authService.activateAccount(email, verification_code)
+            const verification = await this.authService.activateAccountEmail(email, verification_code)
             return verification
         } catch (error) {
             throw error
