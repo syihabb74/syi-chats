@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model, UpdateResult } from "mongoose";
-import { Refresher } from "src/auth/interfaces/refresher.token.schema";
+import { Document, Model, UpdateResult } from "mongoose";
+import { Refresher } from "src/auth/schemas/refresher.token.schema";
 import IRefresher from "src/auth/interfaces/refresher.interfaces";
-import { Verification } from "./schemas/verification.schema";
+import { Verification, VerificationDocument } from "./schemas/verification.schema";
 import IVerification from "./interfaces/verification.interface";
 
 
@@ -30,18 +30,25 @@ export class AuthRepository {
 
     }
 
-    async findCodeVerificationByEmail (email : string) : Promise<Verification | null> {
+    async findCodeVerificationByEmail (email : string) : Promise<VerificationDocument | null> {
 
-        return this.verificationModel.findOne({verification_identity : email, type : 'email' ,is_used : false}).lean().exec();
+        return this.verificationModel.findOne({verification_identity : email, type : 'email' ,is_used : false})
    
 
     }
+    
 
-    async changeIsUsedStatus (email : string) : Promise<UpdateResult> {
+    async changeIsUsedStatus (verification : VerificationDocument) : Promise<UpdateResult> {
+         return verification.updateOne({ $set: { is_used: true } })
+    }
 
-        return this.verificationModel.updateOne({verification_identity : email, type : 'email' ,is_used : false}, {is_used : true});
+    async incrementAttemps (verification : VerificationDocument) : Promise<UpdateResult> {
+
+        return verification.updateOne({$inc : { attempts : 1 }})
 
     }
+
+  
 
 
 }

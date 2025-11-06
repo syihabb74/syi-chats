@@ -21,12 +21,13 @@ export class AuthService {
 
     async signUp(user: IUserRegister) {
 
+
         const code = generateRandomSixDigitCode();
         const result = await this.userService.signUp(user);
-        await this.saveVerificationCode({
+        this.saveVerificationCode({
             verification_identity : result.email,
             verification_code : `${code}`,
-            expires_at : new Date(Date.now() + 60 * 1000)
+            expires_at : new Date(Date.now() + 15 * 60 * 1000)
         });
         return result
 
@@ -61,13 +62,16 @@ export class AuthService {
 
         const verification = await this.authRepository.findCodeVerificationByEmail(email);
         if (!verification) throw new BadRequestException("Invalid code");
-        if (verification.verification_code !== verification_code) throw new BadRequestException("Incorrect verification code");
+        if (verification.attempts >= 5) throw new BadRequestException("Limit exceed please request code again");
+        if (verification.verification_code !== verification_code) {
+            this.authRepository.incrementAttemps(verification);
+            throw new BadRequestException("Incorrect verification code");
+        }
         this.userService.activatingAccount(email);
-        this.authRepository.changeIsUsedStatus(email);
+        this.authRepository.changeIsUsedStatus(verification);
         return 'Your account is activated now'
 
     }
-
 
 
 }
