@@ -8,7 +8,7 @@ import IUserLogin from "src/common/interfaces/user.login.interfaces";
 import IUserRegister from "src/common/interfaces/user.register.interfaces";
 import IUser from "src/user/interfaces/user.interface";
 import { BcryptService } from "src/common/helpers/bcrypt.service";
-import { RegexService } from "src/common/helpers/regex.format-email.service";
+import { RegexService } from "src/common/helpers/regex.service";
 import { JwtService } from "src/common/helpers/jwt.service";
 import { UserRepository } from "./user.repository";
 

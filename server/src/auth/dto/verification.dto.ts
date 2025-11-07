@@ -1,9 +1,4 @@
-import { IsEnum, IsNotEmpty, IsString } from "class-validator";
-
-export enum VerificationType {
-    EMAIL = 'email',
-    PHONE = 'phone'
-}
+import { IsNotEmpty, IsString } from "class-validator";
 
 export class VerificationDto {
 
@@ -11,8 +6,5 @@ export class VerificationDto {
     @IsNotEmpty({message : 'verification code is required'})
     verification_code : string
 
-    @IsEnum({message : 'type must be email or phone'})
-    @IsNotEmpty({message : 'type is required'})
-    type : VerificationType = VerificationType.EMAIL
 
 }

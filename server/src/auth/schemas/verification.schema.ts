@@ -46,7 +46,7 @@ export class Verification {
         required : true,
         default : false
     })
-    is_used : Boolean
+    is_new_request : Boolean
 
 }
 

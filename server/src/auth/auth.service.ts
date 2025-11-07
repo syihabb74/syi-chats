@@ -6,7 +6,7 @@ import { AuthRepository } from "./auth.repository";
 import IVerification from "./interfaces/verification.interface";
 import generateRandomSixDigitCode from "src/common/utils/generateRandomCode";
 import { ResendService } from "src/common/resend/resend.service";
-import { RegexService } from "src/common/helpers/regex.format-email.service";
+import { RegexService } from "src/common/helpers/regex.service";
 import { UserRepository } from "src/user/user.repository";
 
 
@@ -63,6 +63,9 @@ export class AuthService {
     }
 
     async activateAccountEmail (email : string,verification_code : string): Promise<string> {
+        const isValidVerificationCode = this.regexService.codeVerificationChecker(verification_code);
+        if (!isValidVerificationCode) throw new BadRequestException('Invalid code');
+        if (!email.trim()) throw new BadRequestException('email is required')
         const isEmail = this.regexService.emailChecker(email);
         if (!isEmail) throw new BadRequestException('email is invalid format');
         const [verification, emailExist] = await Promise.all([
@@ -79,7 +82,7 @@ export class AuthService {
             throw new BadRequestException("Incorrect verification code");
         }
         this.userService.activatingAccount(email);
-        this.authRepository.changeIsUsedStatus(verification);
+        this.authRepository.changeIsNewRequest(verification);
         return 'Your account is activated now'
 
     }

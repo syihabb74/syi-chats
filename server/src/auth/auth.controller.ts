@@ -1,6 +1,8 @@
 import {
+    BadRequestException,
     Body,
     Controller,
+    Get,
     HttpCode,
     Post, 
     Query, 
@@ -52,15 +54,39 @@ export class AuthController {
 
     }
 
+    @Get('verify')
+    @HttpCode(200) 
+    async getNewCode (
+        @Query('email') email : string,
+        @Query('phone') phoneNumber : string
+    ) {
+        
+        if (email === undefined && phoneNumber === undefined) throw new BadRequestException('Please choose verify method for email or phone number to request code');
+        if (email && phoneNumber) throw new BadRequestException('lease choose verify method for email or phone number to request code');
+
+        try {
+            
+        } catch (error) {
+            
+        }
+        
+    }
+
     @Post('verify')
     @HttpCode(200)
     async verifyAccount (
         @Body() verificationDto : VerificationDto,
-        @Query('email') email : string
+        @Query('email') email : string,
+        @Query('phone') phoneNumber : string
     ) : Promise<string> {
+
+        if (email === undefined && phoneNumber === undefined) throw new BadRequestException('Please choose verify method email or phone number');
+        if (email && phoneNumber) throw new BadRequestException('Please choose one verify method. email or phone number');
+       
+        
         try {
-            const {verification_code} = verificationDto
-            const verification = await this.authService.activateAccountEmail(email, verification_code)
+            const {verification_code} = verificationDto;
+            const verification = email ? await this.authService.activateAccountEmail(email, verification_code) : ''
             return verification
         } catch (error) {
             throw error

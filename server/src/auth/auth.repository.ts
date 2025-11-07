@@ -32,14 +32,14 @@ export class AuthRepository {
 
     async findCodeVerificationByEmail (email : string) : Promise<VerificationDocument | null> {
 
-        return this.verificationModel.findOne({verification_identity : email, type : 'email' ,is_used : false})
+        return this.verificationModel.findOne({verification_identity : email, type : 'email' ,is_new_request : false})
    
 
     }
     
 
-    async changeIsUsedStatus (verification : VerificationDocument) : Promise<UpdateResult> {
-         return verification.updateOne({ $set: { is_used: true } })
+    async changeIsNewRequest (verification : VerificationDocument) : Promise<UpdateResult> {
+         return verification.updateOne({ $set: { is_new_request: true } })
     }
 
     async incrementAttemps (verification : VerificationDocument) : Promise<UpdateResult> {

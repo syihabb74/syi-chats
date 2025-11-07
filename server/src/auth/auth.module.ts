@@ -7,7 +7,7 @@ import { Refresher, refresherSchema } from "src/auth/schemas/refresher.token.sch
 import { UserModule } from "src/user/user.module";
 import { Verification, verificationSchema } from "./schemas/verification.schema";
 import { ResendModule } from "src/common/resend/resend.module";
-import { RegexService } from "src/common/helpers/regex.format-email.service";
+import { RegexService } from "src/common/helpers/regex.service";
 
 
 @Module({
