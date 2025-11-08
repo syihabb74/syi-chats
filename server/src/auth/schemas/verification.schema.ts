@@ -48,6 +48,13 @@ export class Verification {
     })
     is_new_request : Boolean
 
+    @Prop({
+        type : Boolean,
+        required : true,
+        default : false
+    })
+    is_used : Boolean
+
 }
 
 

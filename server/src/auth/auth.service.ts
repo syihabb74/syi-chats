@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import IUserLogin from "src/common/interfaces/user.login.interfaces";
 import IUserRegister from "src/common/interfaces/user.register.interfaces";
 import { UserService } from "src/user/user.service";
@@ -8,6 +8,7 @@ import generateRandomSixDigitCode from "src/common/utils/generateRandomCode";
 import { ResendService } from "src/common/resend/resend.service";
 import { RegexService } from "src/common/helpers/regex.service";
 import { UserRepository } from "src/user/user.repository";
+import { NotFoundError } from "rxjs";
 
 
 
@@ -23,16 +24,44 @@ export class AuthService {
     ) 
         { }
 
-    async signUp(user: IUserRegister) {
+    private async saveVerificationCode (verification : IVerification) : Promise<
+        [Awaited<ReturnType<AuthRepository['saveVerificationCode']>>, Awaited<ReturnType<ResendService['sendCode']>>]
+    > {
 
+        return Promise.all([
+             this.authRepository.saveVerificationCode(verification),
+             this.resendService.sendCode(verification.verification_code, verification.verification_identity) // memblocking agak cukup lumayan lama
+        ])
 
+    }
+
+    private async createCodeSaveAndSending (email : string): Promise<void> {
+        
+        const verification = await this.authRepository.findCodeVerificationByEmail(email);
+        if (!verification) throw new NotFoundException('aaaaaa')
+        await this.authRepository.updateIsNewRequest(verification)
         const code = generateRandomSixDigitCode();
-        const result = await this.userService.signUp(user);
         this.saveVerificationCode({
-            verification_identity : result.email,
+            verification_identity : email,
             verification_code : `${code}`,
             expires_at : new Date(Date.now() + 15 * 60 * 1000)
         });
+
+    }
+
+    async getNewCode (email : string) : Promise<string> {
+
+        await this.createCodeSaveAndSending(email); 
+
+        return 'New verification code has been sending to your gmail please check your email!!'
+
+    }
+
+     async signUp(user: IUserRegister) {
+
+
+        const result = await this.userService.signUp(user);
+        this.createCodeSaveAndSending(result.email);
         return result
 
         
@@ -51,16 +80,7 @@ export class AuthService {
 
     }
 
-    private async saveVerificationCode (verification : IVerification) : Promise<
-        [Awaited<ReturnType<AuthRepository['saveVerificationCode']>>, Awaited<ReturnType<ResendService['sendCode']>>]
-    > {
-
-        return Promise.all([
-             this.authRepository.saveVerificationCode(verification),
-             this.resendService.sendCode(verification.verification_code, verification.verification_identity)
-        ])
-
-    }
+    
 
     async activateAccountEmail (email : string,verification_code : string): Promise<string> {
         const isValidVerificationCode = this.regexService.codeVerificationChecker(verification_code);
@@ -78,11 +98,11 @@ export class AuthService {
         if (!verification) throw new BadRequestException("Invalid code");
         if (verification.attempts >= 5) throw new BadRequestException("Limit exceed please request code again");
         if (verification.verification_code !== verification_code) {
-            this.authRepository.incrementAttemps(verification);
+            await this.authRepository.incrementAttemps(verification);
             throw new BadRequestException("Incorrect verification code");
         }
-        this.userService.activatingAccount(email);
-        this.authRepository.changeIsNewRequest(verification);
+        await this.userService.activatingAccount(email);
+        this.authRepository.deleteVerification(email, 'email')
         return 'Your account is activated now'
 
     }

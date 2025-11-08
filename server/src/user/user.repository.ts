@@ -25,7 +25,7 @@ export class UserRepository {
 
     async findOneByEmail(email: string) : Promise<User | null> {
 
-        return this.userModel.findOne({email}).select('-createdAt -updatedAt').lean();
+        return this.userModel.findOne({email}).select('-createdAt -updatedAt').lean().exec();
 
     }
 
@@ -33,7 +33,7 @@ export class UserRepository {
     async findOneByUsername(username : string) : Promise<User | null> {
 
 
-        return this.userModel.findOne({username}).select('-createdAt -updatedAt').lean();
+        return this.userModel.findOne({username}).select('-createdAt -updatedAt').lean().exec();
 
     }
 

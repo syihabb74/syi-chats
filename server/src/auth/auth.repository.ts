@@ -26,7 +26,7 @@ export class AuthRepository {
     async saveVerificationCode (verification : IVerification) : Promise<Verification> {
 
         const createVerificationCode = new this.verificationModel(verification);
-        return createVerificationCode.save();
+        return await createVerificationCode.save();
 
     }
 
@@ -38,8 +38,19 @@ export class AuthRepository {
     }
     
 
-    async changeIsNewRequest (verification : VerificationDocument) : Promise<UpdateResult> {
-         return verification.updateOne({ $set: { is_new_request: true } })
+    async deleteVerification (email : string, type : string) : Promise<void> {
+        console.log(email, "<<<<<<< masuk ke delete")
+        await this.verificationModel.deleteMany({email, type:type });
+
+    }
+
+    async updateIsNewRequest(verification : VerificationDocument) : Promise<void> {
+       
+
+        verification.is_new_request = true
+
+        await verification.save();
+
     }
 
     async incrementAttemps (verification : VerificationDocument) : Promise<UpdateResult> {
