@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { 
+     BadRequestException,
+     Injectable,
+     NotFoundException
+} from "@nestjs/common";
 import IUserLogin from "src/common/interfaces/user.login.interfaces";
 import IUserRegister from "src/common/interfaces/user.register.interfaces";
 import { UserService } from "src/user/user.service";
@@ -8,7 +12,6 @@ import generateRandomSixDigitCode from "src/common/utils/generateRandomCode";
 import { ResendService } from "src/common/resend/resend.service";
 import { RegexService } from "src/common/helpers/regex.service";
 import { UserRepository } from "src/user/user.repository";
-import { NotFoundError } from "rxjs";
 
 
 
@@ -37,22 +40,29 @@ export class AuthService {
 
     private async createCodeSaveAndSending (email : string): Promise<void> {
         
-        const verification = await this.authRepository.findCodeVerificationByEmail(email);
-        if (!verification) throw new NotFoundException('aaaaaa')
-        await this.authRepository.updateIsNewRequest(verification)
         const code = generateRandomSixDigitCode();
-        this.saveVerificationCode({
+        await this.saveVerificationCode({
             verification_identity : email,
             verification_code : `${code}`,
             expires_at : new Date(Date.now() + 15 * 60 * 1000)
         });
-
+        
     }
-
+    
     async getNewCode (email : string) : Promise<string> {
-
+        
+        if (!email.trim()) throw new BadRequestException('email is required')
+        const isEmail = this.regexService.emailChecker(email);
+        if (!isEmail) throw new BadRequestException('email is invalid format');
+           const [verification, emailExist] = await Promise.all([
+            this.authRepository.findCodeVerificationByEmail(email),
+            this.userRepository.findOneByEmail(email)
+            
+        ]);
+        if (!verification) throw new NotFoundException('Email not found please register first');
+        if (!emailExist) throw new NotFoundException("please register first")
+        await this.authRepository.updateIsNewRequest(verification)
         await this.createCodeSaveAndSending(email); 
-
         return 'New verification code has been sending to your gmail please check your email!!'
 
     }
@@ -103,7 +113,7 @@ export class AuthService {
         }
         await this.userService.activatingAccount(email);
         this.authRepository.deleteVerification(email, 'email')
-        return 'Your account is activated now'
+        return 'Your account is activated now';
 
     }
 

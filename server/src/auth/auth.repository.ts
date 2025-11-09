@@ -1,9 +1,15 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Document, Model, UpdateResult } from "mongoose";
+import { 
+     Model,
+     UpdateResult
+} from "mongoose";
 import { Refresher } from "src/auth/schemas/refresher.token.schema";
 import IRefresher from "src/auth/interfaces/refresher.interfaces";
-import { Verification, VerificationDocument } from "./schemas/verification.schema";
+import { 
+     Verification,
+     VerificationDocument 
+} from "./schemas/verification.schema";
 import IVerification from "./interfaces/verification.interface";
 
 
@@ -19,11 +25,11 @@ export class AuthRepository {
     async saveRefreshToken(refresh_token : IRefresher) : Promise<Refresher> {
 
         const createRefresher = new this.refresherModel(refresh_token)
-        return createRefresher.save();
+        return await createRefresher.save();
 
     }
 
-    async saveVerificationCode (verification : IVerification) : Promise<Verification> {
+    async saveVerificationCode (verification : IVerification) : Promise<VerificationDocument> {
 
         const createVerificationCode = new this.verificationModel(verification);
         return await createVerificationCode.save();
@@ -32,15 +38,14 @@ export class AuthRepository {
 
     async findCodeVerificationByEmail (email : string) : Promise<VerificationDocument | null> {
 
-        return this.verificationModel.findOne({verification_identity : email, type : 'email' ,is_new_request : false})
+        return await this.verificationModel.findOne({verification_identity : email, type : 'email' ,is_new_request : false})
    
 
     }
     
 
     async deleteVerification (email : string, type : string) : Promise<void> {
-        console.log(email, "<<<<<<< masuk ke delete")
-        await this.verificationModel.deleteMany({email, type:type });
+        await this.verificationModel.deleteMany({email, type:type }).exec();
 
     }
 
@@ -55,7 +60,7 @@ export class AuthRepository {
 
     async incrementAttemps (verification : VerificationDocument) : Promise<UpdateResult> {
 
-        return verification.updateOne({$inc : { attempts : 1 }})
+        return await verification.updateOne({$inc : { attempts : 1 }})
 
     }
 
