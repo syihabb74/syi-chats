@@ -112,7 +112,7 @@ export class AuthService {
             throw new BadRequestException("Incorrect verification code");
         }
         await this.userService.activatingAccount(email);
-        this.authRepository.deleteVerification(email, 'email')
+        await this.authRepository.deleteVerification(email, 'email')
         return 'Your account is activated now';
 
     }

@@ -45,7 +45,10 @@ export class AuthRepository {
     
 
     async deleteVerification (email : string, type : string) : Promise<void> {
-        await this.verificationModel.deleteMany({email, type:type }).exec();
+
+        console.log("Masuk ke sini mau delete semua", email, type);
+
+        await this.verificationModel.deleteMany({verification_identity : email, type: type }).exec();
 
     }
 
