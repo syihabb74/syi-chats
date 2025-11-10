@@ -126,7 +126,7 @@ export class AuthController {
 
     }
 
-    @Post('password/verify-token')
+    @Post('password/reset/verify-token')
     @HttpCode(200)
     async changePassword (
         @Body() emailResetDto : EmailResetDto,

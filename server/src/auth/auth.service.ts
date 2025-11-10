@@ -110,21 +110,22 @@ export class AuthService {
     }
 
      async forgotPassword (email : string) : Promise<string> {
-
-        const emailExist = await this.userRepository.findOneByUsername(email);
+        console.log(email)
+         const emailExist = await this.userRepository.findOneByEmail(email);
+         console.log(emailExist)
         if (!emailExist) throw new BadRequestException("Please register first");
         if (!emailExist.is_verified) throw new BadRequestException("Please verify your account first");
         const payload = await this.jwtService.signToken({
             _id : emailExist._id.toString(),
             identifier : emailExist.email
-        }, '15m')
+        }, '15m', process.env.JOSE_SECRET_RESET_PASSWORD_KEY as string)
         const resetPassword : Omit<IResetPassword, '_id'> = {
             email : email,
             reset_token : payload,
             expires_at : new Date(Date.now() + 15 * 60 * 1000),
         }
         await this.authRepository.saveResetPasswordToken(resetPassword);
-        await this.resendService.sendPasswordReset(email, 'http://localhost:3000/r')
+        await this.resendService.sendPasswordReset(email, `http://localhost:3000/password/reset/verify-token?token=${payload}`)
         return 'Verification link has been sending to your email please check your email account'
 
 

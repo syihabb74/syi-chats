@@ -13,9 +13,9 @@ import IPayload from '../interfaces/payload.interfaces';
 export class JwtService {
 
 
-  async signToken(payload : IPayload, expireTime : string) : Promise<string> {
+  async signToken(payload : IPayload, expireTime : string, secret_key : string) : Promise<string> {
 
-    const secret = new TextEncoder().encode(process.env.JOSE_SECRET_KEY);
+    const secret = new TextEncoder().encode(secret_key);
     const alg = 'HS256';
 
     const jwt = await new jose.SignJWT(payload)

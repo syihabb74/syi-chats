@@ -49,8 +49,8 @@ export class UserService {
             const identifier = isEmailLogin ? userLogin.email : userLogin.username;
             const [access_token, refresh_token] = await Promise.all(
                 [
-                    this.jwtService.signToken({ _id: userLogin._id.toString(), identifier }, "15m"),
-                    this.jwtService.signToken({ _id: userLogin._id.toString(), identifier }, "7d")
+                    this.jwtService.signToken({ _id: userLogin._id.toString(), identifier }, "15m", process.env.JOSE_SECRET_ACCESS_TOKEN_KEY as string),
+                    this.jwtService.signToken({ _id: userLogin._id.toString(), identifier }, "7d", process.env.JOSE_SECRET_REFRESH_KEY as string)
                 ]
             )
             return {
