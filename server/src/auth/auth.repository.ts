@@ -11,6 +11,8 @@ import {
      VerificationDocument 
 } from "./schemas/verification.schema";
 import IVerification from "./interfaces/verification.interface";
+import IResetPassword from "./interfaces/reset.password.interfaces";
+import { ResetPassword } from "./schemas/reset.password.schema";
 
 
 
@@ -19,7 +21,8 @@ export class AuthRepository {
 
     constructor(
         @InjectModel(Refresher.name) private readonly refresherModel : Model<Refresher>,
-        @InjectModel(Verification.name) private readonly verificationModel : Model<Verification>
+        @InjectModel(Verification.name) private readonly verificationModel : Model<Verification>,
+        @InjectModel(ResetPassword.name) private readonly resetPasswordModel : Model<ResetPassword>
     ) { }
 
     async saveRefreshToken(refresh_token : IRefresher) : Promise<Refresher> {
@@ -46,8 +49,6 @@ export class AuthRepository {
 
     async deleteVerification (email : string, type : string) : Promise<void> {
 
-        console.log("Masuk ke sini mau delete semua", email, type);
-
         await this.verificationModel.deleteMany({verification_identity : email, type: type }).exec();
 
     }
@@ -64,6 +65,12 @@ export class AuthRepository {
     async incrementAttemps (verification : VerificationDocument) : Promise<UpdateResult> {
 
         return await verification.updateOne({$inc : { attempts : 1 }})
+
+    }
+
+    async saveResetPasswordToken (reset_token : Omit<IResetPassword, '_id'>) : Promise<IResetPassword> {
+
+        return (await new this.resetPasswordModel(reset_token).save()).toJSON();
 
     }
 

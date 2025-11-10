@@ -25,6 +25,12 @@ export class ResendService {
 
     async sendPasswordReset (receiver : string, resetLink: string) {
 
+        this.resend.emails.send({
+            from: 'syi-chats <noreply@syhbsrc.site>',
+            to: receiver,
+            subject: 'Reset password syi-chats account',
+            html: `<p>Code Verification : <strong>${resetLink}</strong></p>`
+        })
 
     }
 
