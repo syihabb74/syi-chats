@@ -19,6 +19,7 @@ import { UserModule } from "src/user/user.module";
 import { ResendModule } from "src/common/resend/resend.module";
 import { RegexService } from "src/common/helpers/regex.service";
 import { JwtService } from "src/common/helpers/jwt.service";
+import { BcryptService } from "src/common/helpers/bcrypt.service";
 
 
 @Module({
@@ -43,7 +44,8 @@ import { JwtService } from "src/common/helpers/jwt.service";
         AuthService, 
         AuthRepository,
         RegexService,
-        JwtService
+        JwtService,
+        BcryptService
     ],
 })
 

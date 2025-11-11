@@ -1,18 +1,17 @@
-import { Injectable } from "@nestjs/common";
-import { InjectModel } from "@nestjs/mongoose";
-import { 
-     Model,
-     UpdateResult
-} from "mongoose";
-import { Refresher } from "src/auth/schemas/refresher.token.schema";
-import IRefresher from "src/auth/interfaces/refresher.interfaces";
 import { 
      Verification,
      VerificationDocument 
 } from "./schemas/verification.schema";
+import { 
+     Model,
+} from "mongoose";
+import { Injectable } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Refresher } from "src/auth/schemas/refresher.token.schema";
+import IRefresher from "src/auth/interfaces/refresher.interfaces";
 import IVerification from "./interfaces/verification.interface";
 import IResetPassword from "./interfaces/reset.password.interfaces";
-import { ResetPassword } from "./schemas/reset.password.schema";
+import { ResetPassword, ResetPasswordDocument } from "./schemas/reset.password.schema";
 
 
 
@@ -61,11 +60,11 @@ export class AuthRepository {
 
     }
 
-    async updateIsNewRequest(verification : VerificationDocument) : Promise<void> {
+    async updateIsNewRequestVerification(verificationDoc : VerificationDocument) : Promise<void> {
        
         try {
-          verification.is_new_request = true
-          await verification.save();      
+          verificationDoc.is_new_request = true
+          await verificationDoc.save();      
         } catch (error) {
           throw error  
         }
@@ -73,10 +72,10 @@ export class AuthRepository {
 
     }
 
-    async incrementAttemps (verification : VerificationDocument) : Promise<UpdateResult> {
+    async incrementVerificationAttemps (verificationDoc : VerificationDocument) : Promise<void> {
 
         try {
-            return await verification.updateOne({$inc : { attempts : 1 }})
+            await verificationDoc.updateOne({$inc : { attempts : 1 }}).lean().exec()
         } catch (error) {
             throw error
         }
@@ -93,13 +92,35 @@ export class AuthRepository {
 
     }
 
-    async findToken(reset_token : string) : Promise<IResetPassword | null> {
+    async findTokenResetPassword(reset_token : string) : Promise< ResetPasswordDocument | null> {
 
         try {
-            return await this.resetPasswordModel.findOne({reset_token}).lean().exec()
+            return await this.resetPasswordModel.findOne({reset_token, is_new_request : false})
         } catch (error) {
             throw error
         }
+
+    }
+
+    async incrementResetPasswordAttempts (resetPasswordDoc : ResetPasswordDocument) {
+
+         try {
+            await resetPasswordDoc.updateOne({$inc : { attempts : 1 }}).lean().exec()
+        } catch (error) {
+            throw error
+        }
+
+    }
+
+     async updateIsNewRequestResetPassword(resetPasswordDoc : ResetPasswordDocument) : Promise<void> {
+       
+        try {
+          resetPasswordDoc.is_new_request = true
+          await resetPasswordDoc.save();      
+        } catch (error) {
+          throw error  
+        }
+      
 
     }
 

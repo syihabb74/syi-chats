@@ -1,7 +1,8 @@
 import {
     BadRequestException,
     Injectable,
-    NotFoundException
+    NotFoundException,
+    UnauthorizedException
 } from "@nestjs/common";
 import IUserLogin from "src/common/interfaces/user.login.interfaces";
 import IUserRegister from "src/common/interfaces/user.register.interfaces";
@@ -14,6 +15,8 @@ import { RegexService } from "src/common/helpers/regex.service";
 import { UserRepository } from "src/user/user.repository";
 import IResetPassword from "./interfaces/reset.password.interfaces";
 import { JwtService } from "src/common/helpers/jwt.service";
+import { BcryptService } from "src/common/helpers/bcrypt.service";
+import IPayload from "src/common/interfaces/payload.interfaces";
 
 
 
@@ -26,7 +29,8 @@ export class AuthService {
         private readonly resendService: ResendService,
         private readonly regexService: RegexService,
         private readonly userRepository: UserRepository,
-        private readonly jwtService : JwtService
+        private readonly jwtService : JwtService,
+        private readonly bcryptService : BcryptService
     ) { }
 
     private async saveVerificationCode(verification: IVerification): Promise<
@@ -63,7 +67,7 @@ export class AuthService {
         ]);
         if (!verification) throw new NotFoundException('Email not found please register first');
         if (!emailExist) throw new NotFoundException("please register first")
-        await this.authRepository.updateIsNewRequest(verification)
+        await this.authRepository.updateIsNewRequestVerification(verification)
         await this.createCodeSaveAndSending(email);
         return 'New verification code has been sending to your gmail please check your email!!'
 
@@ -85,7 +89,7 @@ export class AuthService {
         if (!verification) throw new BadRequestException("Invalid code");
         if (verification.attempts >= 5) throw new BadRequestException("Limit exceed please request code again");
         if (verification.verification_code !== verification_code) {
-            await this.authRepository.incrementAttemps(verification);
+            await this.authRepository.incrementVerificationAttemps(verification);
             throw new BadRequestException("Incorrect verification code");
         }
         await this.userService.activatingAccount(email);
@@ -124,10 +128,22 @@ export class AuthService {
         return 'Verification link has been sending to your email please check your email account'
     }
 
-    async changePassword (email : string) : Promise<string> {
+    async changePassword (newPassword : string, newConfirmationPassword : string, reset_token : string) : Promise<string> {
 
+        try {
+            const {_id , identifier : email} : IPayload = await this.jwtService.verifyToken(reset_token, process.env.JOSE_SECRET_RESET_PASSWORD_KEY as string);
+            const userExist = await this.userRepository.findOneByEmail(email);
+            if (!userExist) throw new UnauthorizedException('Invalid token');
+            if (newPassword !== newConfirmationPassword) {
 
-        return ''
+                throw new BadRequestException("Confirmation password not match");
+            };
+            const hashedPassword = this.bcryptService.hashPassword(newPassword);
+            return ''
+        } catch (error) {
+            throw error
+        }
+
     }
 
 

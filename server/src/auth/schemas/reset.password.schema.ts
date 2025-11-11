@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
 
-export type RefresherDocument = ResetPassword & Document
+export type ResetPasswordDocument = ResetPassword & Document
 
 @Schema({
     versionKey : false,

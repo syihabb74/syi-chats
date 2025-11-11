@@ -22,7 +22,7 @@ import { UserRepository } from "./user.repository";
     ],
     exports: [
         UserRepository,
-        UserService,
+        UserService
     ]
 })
 

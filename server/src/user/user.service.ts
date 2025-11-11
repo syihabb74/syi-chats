@@ -60,13 +60,10 @@ export class UserService {
     
         }
 
-        async changePassword (newPassword : string, newConfirmationPassword : string, token : string) : Promise<string> {
+        async changePassword (email : string, hashedPassword : string) : Promise<string> {
 
             try {
-                const {_id , identifier} = await this.jwtService.verifyToken(token, process.env.JOSE_SECRET_RESET_PASSWORD_KEY as string);
-                if (newPassword !== newConfirmationPassword) throw new BadRequestException("Confirmation password not match");
-                const hashedPassword = this.bcryptService.hashPassword(newPassword);
-                await this.userRepository.changePassword(identifier, hashedPassword);
+                await this.userRepository.changePassword(email, hashedPassword);
                 return 'Password successfully changed'
             } catch (error) {
                 throw error
