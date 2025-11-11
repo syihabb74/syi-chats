@@ -32,15 +32,11 @@ export class AuthController {
     async login(@Body() loginDto: LoginUserDto): Promise<Record<string, string>> {
 
         try {
-
             const token = await this.authService.signIn(loginDto);
             await this.authService.refresherTokenSave(token.refresh_token);
             return token
-
         } catch (error) {
-
             throw error
-
         }
 
     }
@@ -52,11 +48,8 @@ export class AuthController {
         try {
             const message = await this.authService.signUp(createDto)
             return { message }
-
         } catch (error) {
-
             throw error
-
         }
 
     }
@@ -72,14 +65,10 @@ export class AuthController {
         if (email && phoneNumber) throw new BadRequestException('lease choose verify method for email or phone number to request code');
 
         try {
-
             const message: string = await this.authService.getNewCode(email);
             return { message }
-
         } catch (error) {
-
             throw error
-
         }
 
     }
@@ -111,17 +100,11 @@ export class AuthController {
     ) : Promise<Record<string, any>> {
 
         try {
-            
-
             const {email} = emailResetDto
             const message = await this.authService.forgotPassword(email);
-            
-            return {message : ''}
-
+            return {message}
         } catch (error) {
-            
             throw error
-
         }
 
     }
@@ -129,21 +112,15 @@ export class AuthController {
     @Post('password/reset/verify-token')
     @HttpCode(200)
     async changePassword (
-        @Body() emailResetDto : EmailResetDto,
+        @Body() resetPasswordDto : ResetPasswordDto,
     ) : Promise<Record<string, any>> {
 
         try {
-            
+            const {newPassword, confirmationNewPassword} = resetPasswordDto
 
-            const {email} = emailResetDto
-            const message = await this.authService.forgotPassword(email);
-            
             return {message : ''}
-
         } catch (error) {
-            
             throw error
-
         }
 
     }

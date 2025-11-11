@@ -41,7 +41,11 @@ export class AuthRepository {
 
     async findCodeVerificationByEmail (email : string) : Promise<VerificationDocument | null> {
 
-        return await this.verificationModel.findOne({verification_identity : email, type : 'email' ,is_new_request : false})
+        try {
+            return await this.verificationModel.findOne({verification_identity : email, type : 'email' ,is_new_request : false})
+        } catch (error) {
+            throw error
+        }
    
 
     }
@@ -49,28 +53,53 @@ export class AuthRepository {
 
     async deleteVerification (email : string, type : string) : Promise<void> {
 
-        await this.verificationModel.deleteMany({verification_identity : email, type: type }).exec();
+        try {
+            await this.verificationModel.deleteMany({verification_identity : email, type: type }).exec();
+        } catch (error) {
+            throw error
+        }
 
     }
 
     async updateIsNewRequest(verification : VerificationDocument) : Promise<void> {
        
-
-        verification.is_new_request = true
-
-        await verification.save();
+        try {
+          verification.is_new_request = true
+          await verification.save();      
+        } catch (error) {
+          throw error  
+        }
+      
 
     }
 
     async incrementAttemps (verification : VerificationDocument) : Promise<UpdateResult> {
 
-        return await verification.updateOne({$inc : { attempts : 1 }})
+        try {
+            return await verification.updateOne({$inc : { attempts : 1 }})
+        } catch (error) {
+            throw error
+        }
 
     }
 
     async saveResetPasswordToken (reset_token : Omit<IResetPassword, '_id'>) : Promise<IResetPassword> {
 
-        return (await new this.resetPasswordModel(reset_token).save()).toJSON();
+        try {
+            return (await new this.resetPasswordModel(reset_token).save()).toJSON();
+        } catch (error) {
+            throw error
+        }
+
+    }
+
+    async findToken(reset_token : string) : Promise<IResetPassword | null> {
+
+        try {
+            return await this.resetPasswordModel.findOne({reset_token}).lean().exec()
+        } catch (error) {
+            throw error
+        }
 
     }
 

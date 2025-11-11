@@ -40,6 +40,13 @@ export class ResetPassword {
    })
    is_new_request : boolean
 
+   @Prop({
+    type : Number,
+    required : true,
+    default : 0
+   })
+   attempts : number
+
 
 }
 

@@ -95,22 +95,17 @@ export class AuthService {
 
     async signUp(user: IUserRegister): Promise<string> {
 
-
         const result = await this.userService.signUp(user);
         this.createCodeSaveAndSending(result.email);
         return "Register successfully "
 
-
     }
 
     async signIn(user: IUserLogin): Promise<{ access_token: string, refresh_token: string }> {
-
         return this.userService.signIn(user);
-
     }
 
      async forgotPassword (email : string) : Promise<string> {
-        console.log(email)
          const emailExist = await this.userRepository.findOneByEmail(email);
          console.log(emailExist)
         if (!emailExist) throw new BadRequestException("Please register first");
@@ -127,8 +122,12 @@ export class AuthService {
         await this.authRepository.saveResetPasswordToken(resetPassword);
         await this.resendService.sendPasswordReset(email, `http://localhost:3000/password/reset/verify-token?token=${payload}`)
         return 'Verification link has been sending to your email please check your email account'
+    }
+
+    async changePassword (email : string) : Promise<string> {
 
 
+        return ''
     }
 
 

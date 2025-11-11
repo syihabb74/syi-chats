@@ -18,30 +18,57 @@ export class UserRepository {
         ) { }
 
     async register(newUser : IUserRegister) : Promise<User> {
-        const createUser = new this.userModel(newUser);
-        return (await createUser.save()).toJSON()
+
+        try {
+            const createUser = new this.userModel(newUser);
+            return (await createUser.save()).toJSON()
+        } catch (error) {
+            throw error
+        }
+
+        
     }
 
 
     async findOneByEmail(email: string) : Promise<User | null> {
 
-        return this.userModel.findOne({email}).select('-createdAt -updatedAt').lean().exec();
+        try {
+            return await this.userModel.findOne({email}).select('-createdAt -updatedAt').lean().exec();
+        } catch (error) {
+            throw error
+        }
+
 
     }
 
 
     async findOneByUsername(username : string) : Promise<User | null> {
 
-
-        return this.userModel.findOne({username}).select('-createdAt -updatedAt').lean().exec();
+        try {
+            return await this.userModel.findOne({username}).select('-createdAt -updatedAt').lean().exec();
+        } catch (error) {
+            throw error
+        }
 
     }
 
 
     async activateAccount(email : string) : Promise<UpdateResult> {
 
-        return this.userModel.updateOne({email}, {is_verified : true}).lean().exec()
+        try {
+            return await this.userModel.updateOne({email}, {is_verified : true}).lean().exec()
+        } catch (error) {
+            throw error
+        }
 
+    }
+
+    async changePassword (email : string, newPassword : string) : Promise<UpdateResult> {
+        try {
+            return await this.userModel.updateOne({email}, {password : newPassword}).lean().exec()
+        } catch (error) {
+          throw error  
+        }
     }
 
 
