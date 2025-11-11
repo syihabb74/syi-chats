@@ -113,12 +113,13 @@ export class AuthController {
     @HttpCode(200)
     async changePassword (
         @Body() resetPasswordDto : ResetPasswordDto,
+        @Query('reset_token') reset_token : string
     ) : Promise<Record<string, any>> {
-
+        if (!reset_token) throw new BadRequestException('Reset token is required');
         try {
             const {newPassword, confirmationNewPassword} = resetPasswordDto
-
-            return {message : ''}
+            const message = await this.authService.changePassword(newPassword, confirmationNewPassword, reset_token)
+            return {message}
         } catch (error) {
             throw error
         }

@@ -30,12 +30,14 @@ export class JwtService {
 
     try {
       const secret = new TextEncoder().encode(secret_key);
+
       const {payload} = await jose.jwtVerify(access_token, secret);
       return payload as IPayload
     } catch (error) {
+      console.log(error)
       throw new UnauthorizedException('Invalid token')
     }
-    
+
   }
 
 

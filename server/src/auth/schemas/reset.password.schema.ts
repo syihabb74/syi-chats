@@ -34,13 +34,6 @@ export class ResetPassword {
     expires_at : Date
 
    @Prop({
-    type : Boolean,
-    required : true,
-    default : false
-   })
-   is_new_request : boolean
-
-   @Prop({
     type : Number,
     required : true,
     default : 0

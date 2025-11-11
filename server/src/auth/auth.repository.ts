@@ -92,10 +92,10 @@ export class AuthRepository {
 
     }
 
-    async findTokenResetPassword(reset_token : string) : Promise< ResetPasswordDocument | null> {
+    async findTokenResetPassword(reset_token : string, email : string) : Promise< ResetPasswordDocument | null> {
 
         try {
-            return await this.resetPasswordModel.findOne({reset_token, is_new_request : false})
+            return await this.resetPasswordModel.findOne({reset_token, email})
         } catch (error) {
             throw error
         }
@@ -112,15 +112,13 @@ export class AuthRepository {
 
     }
 
-     async updateIsNewRequestResetPassword(resetPasswordDoc : ResetPasswordDocument) : Promise<void> {
-       
+    async deleteResetPassword (email : string) : Promise<void> {
+
         try {
-          resetPasswordDoc.is_new_request = true
-          await resetPasswordDoc.save();      
+            await this.resetPasswordModel.deleteMany({email : email}).lean().exec();
         } catch (error) {
-          throw error  
+            throw error
         }
-      
 
     }
 

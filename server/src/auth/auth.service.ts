@@ -111,7 +111,6 @@ export class AuthService {
 
      async forgotPassword (email : string) : Promise<string> {
          const emailExist = await this.userRepository.findOneByEmail(email);
-         console.log(emailExist)
         if (!emailExist) throw new BadRequestException("Please register first");
         if (!emailExist.is_verified) throw new BadRequestException("Please verify your account first");
         const payload = await this.jwtService.signToken({
@@ -131,15 +130,28 @@ export class AuthService {
     async changePassword (newPassword : string, newConfirmationPassword : string, reset_token : string) : Promise<string> {
 
         try {
-            const {_id , identifier : email} : IPayload = await this.jwtService.verifyToken(reset_token, process.env.JOSE_SECRET_RESET_PASSWORD_KEY as string);
-            const userExist = await this.userRepository.findOneByEmail(email);
+            const { _ , identifier : email } : IPayload = await this.jwtService.verifyToken(reset_token, process.env.JOSE_SECRET_RESET_PASSWORD_KEY as string);
+            const [userExist, tokenExist] = await Promise.all([
+                await this.userRepository.findOneByEmail(email),
+                await this.authRepository.findTokenResetPassword(reset_token, email)
+            ]);
             if (!userExist) throw new UnauthorizedException('Invalid token');
+            if (!tokenExist) throw new UnauthorizedException('Invalid token');
             if (newPassword !== newConfirmationPassword) {
-
+                if (tokenExist.attempts > 2 ) {
+                await this.authRepository.deleteResetPassword(email);
+                throw new BadRequestException("Limit exceed please request token again");
+                }
+                await this.authRepository.incrementResetPasswordAttempts(tokenExist)
                 throw new BadRequestException("Confirmation password not match");
             };
+            if (tokenExist.attempts >= 3) {
+                await this.authRepository.deleteResetPassword(email);
+                throw new BadRequestException("Limit exceed please request token again");
+            };
             const hashedPassword = this.bcryptService.hashPassword(newPassword);
-            return ''
+            await this.userRepository.changePassword(email, hashedPassword);
+            return 'Password has been successfully changed'
         } catch (error) {
             throw error
         }
