@@ -17,9 +17,7 @@ import { MongooseModule } from "@nestjs/mongoose";
 import { AuthRepository } from "./auth.repository";
 import { UserModule } from "src/user/user.module";
 import { ResendModule } from "src/common/resend/resend.module";
-import { RegexService } from "src/common/helpers/regex.service";
-import { JwtService } from "src/common/helpers/jwt.service";
-import { BcryptService } from "src/common/helpers/bcrypt.service";
+import { SharedModule } from "src/common/shared/shared.module";
 
 
 @Module({
@@ -35,7 +33,8 @@ import { BcryptService } from "src/common/helpers/bcrypt.service";
         ])
         ,
         UserModule,
-        ResendModule
+        ResendModule,
+        SharedModule
     ],
     controllers : [
         AuthController
@@ -43,9 +42,7 @@ import { BcryptService } from "src/common/helpers/bcrypt.service";
     providers : [
         AuthService, 
         AuthRepository,
-        RegexService,
-        JwtService,
-        BcryptService
+        
     ],
 })
 

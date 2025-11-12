@@ -126,6 +126,15 @@ export class AuthController {
 
     }
 
+    @Post('access_token')
+    @HttpCode(200)
+    async getAccessToken () :  Promise<Record<string, string>> {
+        try {
+            return {'' : ''}
+        } catch (error) {
+            throw error
+        }
+    }
 
 
 

@@ -3,15 +3,16 @@ import {
      VerificationDocument 
 } from "./schemas/verification.schema";
 import { 
-     Model,
-} from "mongoose";
+    ResetPassword,
+    ResetPasswordDocument
+} from "./schemas/reset.password.schema";
+import {  Model } from "mongoose";
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Refresher } from "src/auth/schemas/refresher.token.schema";
 import IRefresher from "src/auth/interfaces/refresher.interfaces";
 import IVerification from "./interfaces/verification.interface";
 import IResetPassword from "./interfaces/reset.password.interfaces";
-import { ResetPassword, ResetPasswordDocument } from "./schemas/reset.password.schema";
 
 
 
@@ -27,7 +28,17 @@ export class AuthRepository {
     async saveRefreshToken(refresh_token : IRefresher) : Promise<Refresher> {
 
         const createRefresher = new this.refresherModel(refresh_token)
-        return await createRefresher.save();
+        return (await createRefresher.save()).toJSON();
+
+    }
+
+    async findRefreshTOken (refresh_token : string, identifier : string) : Promise<Refresher | null> {
+        try {
+            const refresher = await this.refresherModel.findOne({refresh_token, identifier, is_used : false}).lean().exec()
+            return refresher
+        } catch (error) {
+            throw error
+        }
 
     }
 
@@ -49,7 +60,6 @@ export class AuthRepository {
 
     }
     
-
     async deleteVerification (email : string, type : string) : Promise<void> {
 
         try {
