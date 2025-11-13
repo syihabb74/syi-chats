@@ -30,14 +30,13 @@ export class AuthRepository {
             const createRefresher = new this.refresherModel(refresh_token)
             return (await createRefresher.save()).toJSON();
         } catch (error) {
-            console.log(error)
             throw error
         }
 
 
     }
 
-    async findRefreshToken (refresh_token : string, identifier : string) : Promise<Refresher | null> {
+    async findRefreshToken (refresh_token : string, identifier : string) : Promise<IRefresher | null> {
         try {
             const refresher = await this.refresherModel.findOne({refresh_token, identifier, is_used : false}).lean().exec()
             return refresher
@@ -57,10 +56,14 @@ export class AuthRepository {
 
     }
 
-    async saveVerificationCode (verification : Omit<IVerification, '_id' | 'attempts'>) : Promise<VerificationDocument> {
+    async saveVerificationCode (verification : Omit<IVerification, '_id' | 'attempts'>) : Promise<void> {
 
-        const createVerificationCode = new this.verificationModel(verification);
-        return await createVerificationCode.save();
+        try {
+            const createVerificationCode = new this.verificationModel(verification);
+            await createVerificationCode.save();
+        } catch (error) {
+            throw error
+        }
 
     }
 
@@ -85,7 +88,7 @@ export class AuthRepository {
 
     }
 
-    async updateIsNewRequestVerification(verification_identity : Pick<IVerification, 'verification_identity'>) : Promise<void> {
+    async updateIsNewRequestVerification({verification_identity} : Pick<IVerification, 'verification_identity'>) : Promise<void> {
        
         try {
         await this.verificationModel.findOneAndUpdate({verification_identity}, {$set : {is_new_request : true}}).lean().exec()
@@ -98,9 +101,10 @@ export class AuthRepository {
 
     }
 
-    async incrementVerificationAttemps (verification_identity : Pick<IVerification, 'verification_identity'>) : Promise<void> {
+    async incrementVerificationAttemps ({verification_identity} : Pick<IVerification, 'verification_identity'>) : Promise<void> {
 
         try {
+            console.log(verification_identity, "<<<<<<<<<<<")
             await this.verificationModel.findOneAndUpdate({verification_identity}, {$inc : {attempts : 1}}).lean().exec()
             // await verificationDoc.updateOne({$inc : { attempts : 1 }}).lean().exec() // hidrated doc old code
         } catch (error) {

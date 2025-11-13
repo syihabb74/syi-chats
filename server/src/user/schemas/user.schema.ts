@@ -17,7 +17,7 @@ export type UserDocument = User & Document;
         }   
     }
 })
-export class User {
+export class  User {
     
     _id!: Types.ObjectId;
 

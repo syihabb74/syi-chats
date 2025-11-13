@@ -88,14 +88,19 @@ export class AuthService {
         try {
             const isValidVerificationCode = this.regexService.codeVerificationChecker(verification_code);
             if (!isValidVerificationCode) throw new BadRequestException('Invalid code');
-            if (!email.trim()) throw new BadRequestException('email is required')
+            console.log("Masuk is valid")
+            if (!email.trim()) throw new BadRequestException('email is required');
+            console.log("Udah di trim")
             const isEmail = this.regexService.emailChecker(email);
+            console.log("Udah di check format email")
             if (!isEmail) throw new BadRequestException('email is invalid format');
             const [verification, emailExist] = await Promise.all([
                 this.authRepository.findCodeVerificationByEmail(email),
                 this.userRepository.findOneByEmail(email)
 
             ]);
+            console.log("verifiation ketemu ga", verification)
+            console.log("emailExist ketemu ga", emailExist)
             if (!emailExist) throw new BadRequestException("please register first");
             if (emailExist.is_verified) throw new BadRequestException("you already verified");
             if (!verification) throw new BadRequestException("Invalid code");
