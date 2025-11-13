@@ -17,6 +17,7 @@ import IVerification from "./interfaces/verification.interface";
 import generateRandomSixDigitCode from "src/common/utils/generateRandomCode";
 import IResetPassword from "./interfaces/reset.password.interfaces";
 import IPayload from "src/common/interfaces/payload.interfaces";
+import { User } from "src/user/schemas/user.schema";
 
 
 
@@ -33,7 +34,7 @@ export class AuthService {
         private readonly bcryptService: BcryptService
     ) { }
 
-    private async saveVerificationCode(verification: IVerification): Promise<
+    private async saveVerificationCode(verification: Omit<IVerification, '_id'| 'attempts'>): Promise<
         [Awaited<ReturnType<AuthRepository['saveVerificationCode']>>, Awaited<ReturnType<ResendService['sendCode']>>]
     > {
 
@@ -128,11 +129,53 @@ export class AuthService {
     async signIn(user: IUserLogin): Promise<Record<string, string>> {
 
         try {
-            return await this.userService.signIn(user);
+            const signIn = await this.userService.signIn(user);
+            await this.authRepository.saveRefreshToken({
+                identifier : user.identifier,
+                refresh_token : signIn.refresh_token,
+                expires_at : new Date(Date.now() + ( 7 * 24 * 60 * 60 * 1000 ))
+            })
+            return signIn
         } catch (error) {
             throw error
         }
 
+    }
+
+    async getNewAccessToken (refresh_token : string) : Promise<Record<string, string>> {
+
+        try {
+             const { _id : id, identifier }: IPayload = await this.jwtService.verifyToken(refresh_token, process.env.JOSE_SECRET_REFRESH_KEY as string);
+             const identifierFind = this.regexService.emailChecker(identifier) ? this.userRepository.findOneByEmail(identifier) : this.userRepository.findOneByUsername(identifier);
+             const [tokenExist, identifierExist] = await Promise.all(
+                [
+                    this.authRepository.findRefreshToken(refresh_token, identifier),
+                     identifierFind
+                ]
+             )
+             if (!tokenExist || !identifierExist) throw new UnauthorizedException('refresh token invalid');
+              const [access_token, ref_token] = await Promise.all(
+                [
+                    this.jwtService.signToken({ _id: id, identifier }, "15m", process.env.JOSE_SECRET_ACCESS_TOKEN_KEY as string),
+                    this.jwtService.signToken({ _id: id, identifier }, "7d", process.env.JOSE_SECRET_REFRESH_KEY as string)
+                ]
+            )
+
+            await this.authRepository.changeIsUsedRefreshToken(refresh_token)
+            console.log(refresh_token, ref_token)
+            await this.authRepository.saveRefreshToken({
+                refresh_token : ref_token,
+                identifier : identifier,
+                expires_at : new Date(Date.now() + ( 7 * 24 * 60 * 60 * 1000 ))
+            });
+            return {
+                access_token,
+                refresh_token : ref_token
+            }
+
+        } catch (error) {
+            throw error
+        }
     }
 
     async forgotPassword(email: string): Promise<string> {
@@ -185,17 +228,10 @@ export class AuthService {
             await this.userRepository.changePassword(email, hashedPassword);
             return 'Password has been successfully changed'
         } catch (error) {
+            
             throw error
         }
 
     }
-
-
-    async refresherTokenSave(refresh_token: string) {
-
-
-
-    }
-
 
 }

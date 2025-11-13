@@ -15,15 +15,14 @@ export class Refresher {
     @Prop({
      type : String,
      required : true,
-     index : true,
-     unique : true
     })
     identifier : string
 
     @Prop({
     type : String,
     required : true,
-    unique : true
+    unique : true,
+    index : true
    })
    refresh_token : string
 

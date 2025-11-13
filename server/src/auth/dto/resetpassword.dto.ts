@@ -1,4 +1,4 @@
-import { IsEmail, isEmail, IsNotEmpty, IsString, IsStrongPassword } from "class-validator";
+import { IsEmail, IsNotEmpty, IsString, IsStrongPassword } from "class-validator";
 
 export class ResetPasswordDto {
 

@@ -20,6 +20,7 @@ import { CreateUserDto } from "../user/dto/create-user.dto";
 import { LoginUserDto } from "../user/dto/login-user.dto";
 import { AuthService } from "./auth.service";
 import { VerificationDto } from "./dto/verification.dto";
+import { RefreshTokenDto } from "./dto/refreshtoken.dto";
 
 @UseGuards(ThrottlerGuard)
 @Throttle({ auth: { limit: 100, ttl: 60000 } })
@@ -33,7 +34,6 @@ export class AuthController {
 
         try {
             const token = await this.authService.signIn(loginDto);
-            await this.authService.refresherTokenSave(token.refresh_token);
             return token
         } catch (error) {
             throw error
@@ -128,9 +128,12 @@ export class AuthController {
 
     @Post('access_token')
     @HttpCode(200)
-    async getAccessToken () :  Promise<Record<string, string>> {
+    async getAccessToken (
+        @Body() refresh_token : RefreshTokenDto
+    ) :  Promise<Record<string, string>> {
         try {
-            return {'' : ''}
+            const getNewAllToken = await this.authService.getNewAccessToken(refresh_token.refresh_token)
+            return getNewAllToken
         } catch (error) {
             throw error
         }

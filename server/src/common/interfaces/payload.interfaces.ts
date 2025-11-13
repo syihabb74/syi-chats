@@ -1,7 +1,8 @@
 import { JWTPayload } from "jose"
+import { Types } from "mongoose"
 export default interface IPayload extends JWTPayload {
 
-    _id : string
+    _id : Types.ObjectId | string
     identifier : string
 
 }
