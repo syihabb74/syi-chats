@@ -8,8 +8,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { PostModule } from './post/post.module';
-import { ChatModule } from './chat/chat.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -33,7 +33,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     }),
     AuthModule,
     PostModule,
-    ChatModule
+    ChatModule,
   ],
   providers: [
     {
