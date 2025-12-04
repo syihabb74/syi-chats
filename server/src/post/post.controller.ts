@@ -7,8 +7,16 @@ export class PostController {
     @UseGuards(AuthGuard)
     @Get()
     async getPosts () {
+        try {
 
-        return {message :['a', 'b', 'c']}
+            return {message :['a', 'b', 'c']}
+            
+        } catch (error) {
+            
+            console.log(error)
+            throw error
+
+        }
 
     }
 

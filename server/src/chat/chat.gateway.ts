@@ -1,25 +1,66 @@
-import { WebSocketGateway, SubscribeMessage, MessageBody, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
+import { WebSocketGateway, SubscribeMessage, MessageBody, OnGatewayConnection, OnGatewayDisconnect, WebSocketServer, WsException } from '@nestjs/websockets';
 import { ChatService } from './chat.service';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { UpdateChatDto } from './dto/update-chat.dto';
-import { WebSocket } from 'ws';
-import { Injectable, UseGuards } from '@nestjs/common';
+import { Server } from 'ws';
+import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { JwtService } from 'src/common/helpers/jwt.service';
 
 @WebSocketGateway()
 export class ChatGateway {
 
-  constructor(private readonly chatService: ChatService) {}
+  @WebSocketServer()
+  server : Server
+
+
+
+  handleConnection(client: any, request: any) {
+
+    try {
+      
+      if (!client.upgradeReq?.headers?.authorization) {
+        client.close()
+        return
+      }
+      const [_, token] = client.upgradeReq.headers.authorization.split(' ') ?? [];
+      if (!token) {
+        client.close()
+       return
+      }
+      this.jwtService.verifyToken(token, process.env.JOSE_SECRET_ACCESS_TOKEN_KEY as string)
+      client.handshakeHeaders = request.headers;
+      client.upgradeReq = request;
+
+
+    } catch (error) {
+      throw error
+    }
+        
+       
+    } // will be running for the first time when client trying to connect
+
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly jwtService : JwtService
+  ) {}
 
   @UseGuards(AuthGuard)
-   @SubscribeMessage('createChat')
-  create(@MessageBody() dto: CreateChatDto) {
-    console.log(dto, "<<<< DTO MASUKKK")
-    return this.chatService.create(dto);
+  @SubscribeMessage('createChat')
+  async create(@MessageBody() dto: CreateChatDto) {
+    try {
+      console.log(dto, "<<<< DTO")
+      const a =  await this.chatService.create(dto);
+      return a
+      
+    } catch (error) {
+      console.log(error, "<<<<<<<<<")
+    }
   }
 
   @SubscribeMessage('findAllChat')
   findAll() {
+    console.log("Find all Chat")
     return this.chatService.findAll();
   }
 

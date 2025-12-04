@@ -4,8 +4,15 @@ import { UpdateChatDto } from './dto/update-chat.dto';
 
 @Injectable()
 export class ChatService {
-  create(createChatDto: CreateChatDto) {
-    return 'This action adds a new chat';
+  async create(createChatDto: CreateChatDto) {
+
+    try {
+      return 'This action adds a new chat';
+    } catch (error) {
+      console.log("ERROR DETECTEDDDD SLURRRRRRRR")
+      console.log(error, "<<<<<<<<<<<<<<<<< ERRROR")
+    }
+
   }
 
   findAll() {
