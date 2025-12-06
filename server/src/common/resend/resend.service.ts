@@ -1,6 +1,7 @@
 import { Inject, Injectable, InternalServerErrorException } from "@nestjs/common";
 import { RESEND_CLIENT } from "./resend.provider";
 import { Resend } from "resend";
+import retryStrategy from "../utils/retryStrategy";
 
 export class ResendService {
 
@@ -10,11 +11,15 @@ export class ResendService {
 
     async sendCode (code : string, receiver : string) {
 
-         this.resend.emails.send({
+        return retryStrategy(async () => {
+            return await this.resend.emails.send({
             from: 'syi-chats <noreply@syhbsrc.site>',
             to: receiver,
             subject: 'Activating syi-chats account',
             html: `<p>Code Verification : <strong>${code}</strong></p>`
+            });
+        }).catch((err) => {
+            console.log("[resend] error causes >>>", err)
         })
 
     }

@@ -67,6 +67,33 @@ export class AuthRepository {
 
     }
 
+    async consumeVerificationCode (email : string, type : string, verification_code : string) : Promise<IVerification | null> {
+
+        try {
+            return await this.verificationModel.findOneAndUpdate(
+                {
+                    verification_identity : email,
+                    verification_code,
+                    type,
+                    is_new_request : false,
+                    is_used : false,
+                    attempts : { $lt : 5},
+                    expires_at : {$gt : new Date()}
+                },
+                {
+                    $set : {is_used : true}
+                },
+                {
+                    new : true
+                }
+            ).lean().exec()
+        } catch (error) {
+            throw error
+        }
+   
+
+    }
+
     async findCodeVerificationByEmail (email : string) : Promise<IVerification | null> {
 
         try {
@@ -91,7 +118,15 @@ export class AuthRepository {
     async updateIsNewRequestVerification({verification_identity} : Pick<IVerification, 'verification_identity'>) : Promise<void> {
        
         try {
-        await this.verificationModel.findOneAndUpdate({verification_identity}, {$set : {is_new_request : true}}).lean().exec()
+        await this.verificationModel.findOneAndUpdate(
+            {
+                verification_identity},
+                {$set : {is_new_request : true}
+            }, 
+            {
+                new : true
+            }
+    ).lean().exec()
         //   verificationDoc.is_new_request = true
         //   await verificationDoc.save();  old code hydrated document
         } catch (error) {
@@ -101,11 +136,20 @@ export class AuthRepository {
 
     }
 
-    async incrementVerificationAttemps ({verification_identity} : Pick<IVerification, 'verification_identity'>) : Promise<void> {
+    async incrementVerificationAttemps (verification_identity : string ) : Promise<void> {
 
         try {
-            console.log(verification_identity, "<<<<<<<<<<<")
-            await this.verificationModel.findOneAndUpdate({verification_identity}, {$inc : {attempts : 1}}).lean().exec()
+            await this.verificationModel.findOneAndUpdate({
+                verification_identity,
+                attempts : {$lt : 5}
+            }, 
+            {
+                $inc : {attempts : 1}
+            },
+            {
+                new : true
+            }
+        ).lean().exec()
             // await verificationDoc.updateOne({$inc : { attempts : 1 }}).lean().exec() // hidrated doc old code
         } catch (error) {
             throw error

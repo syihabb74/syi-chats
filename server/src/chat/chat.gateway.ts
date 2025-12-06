@@ -3,10 +3,12 @@ import { ChatService } from './chat.service';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { UpdateChatDto } from './dto/update-chat.dto';
 import { Server } from 'ws';
-import { UseGuards } from '@nestjs/common';
+import { UseFilters, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { JwtService } from 'src/common/helpers/jwt.service';
+import { WsExceptionFilter } from 'src/exceptions/ws.exception';
 
+@UseFilters(WsExceptionFilter)
 @WebSocketGateway()
 export class ChatGateway {
 
@@ -15,26 +17,36 @@ export class ChatGateway {
 
 
 
-  handleConnection(client: any, request: any) {
+  async handleConnection(client: any, request: any) {
 
     try {
       
-      if (!client.upgradeReq?.headers?.authorization) {
-        client.close()
-        return
+      // console.log(request.headers, "<<<<<") // when handshake happening authorization value exist here
+      if (!request.headers?.authorization){
+        client.send(JSON.stringify({ error: 'Invalid credential' }));
+        client.close();
+        return;
       }
-      const [_, token] = client.upgradeReq.headers.authorization.split(' ') ?? [];
+      const [_, token] = request.headers.authorization.split(' ') ?? [];
       if (!token) {
-        client.close()
-       return
+        client.send(JSON.stringify({ error: 'Invalid credential' }));
+        client.close();
+        return;
       }
-      this.jwtService.verifyToken(token, process.env.JOSE_SECRET_ACCESS_TOKEN_KEY as string)
+      await this.jwtService.verifyToken(token, process.env.JOSE_SECRET_ACCESS_TOKEN_KEY as string)
       client.handshakeHeaders = request.headers;
       client.upgradeReq = request;
 
 
-    } catch (error) {
-      throw error
+    } catch ( error) {
+      if (error.name === "UnauthorizedException") {
+        client.send(JSON.stringify({ status: 401 ,error: 'Invalid credential' }));
+        client.close()
+      } else {
+        client.send(JSON.stringify({ status: 500 ,error: 'Internal Server Error' }));
+        client.close()
+      }
+
     }
         
        

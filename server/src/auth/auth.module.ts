@@ -23,14 +23,10 @@ import { SharedModule } from "src/common/shared/shared.module";
 @Module({
     imports : [
         MongooseModule.forFeature([
-            { name : Refresher.name, schema : refresherSchema}
-        ]),
-        MongooseModule.forFeature([
-            {name : Verification.name, schema : verificationSchema}
-        ]),
-        MongooseModule.forFeature([
-            {name : ResetPassword.name, schema : resetPasswordSchema}
-        ])
+    { name: Refresher.name, schema: refresherSchema },
+    { name: Verification.name, schema: verificationSchema },
+    { name: ResetPassword.name, schema: resetPasswordSchema }
+            ]) // group related models
         ,
         UserModule,
         ResendModule,
@@ -44,6 +40,10 @@ import { SharedModule } from "src/common/shared/shared.module";
         AuthRepository,
         
     ],
+    exports : [
+        AuthRepository
+
+    ]
 })
 
 export class AuthModule {}

@@ -9,7 +9,7 @@ export class ChatService {
     try {
       return 'This action adds a new chat';
     } catch (error) {
-      console.log("ERROR DETECTEDDDD SLURRRRRRRR")
+      console.log("ERROR DETECTE")
       console.log(error, "<<<<<<<<<<<<<<<<< ERRROR")
     }
 

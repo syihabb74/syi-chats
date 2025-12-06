@@ -34,7 +34,6 @@ export class JwtService {
       const {payload} = await jose.jwtVerify(access_token, secret);
       return payload as IPayload
     } catch (error) {
-      console.log(error)
       throw new UnauthorizedException('Invalid token')
     }
 

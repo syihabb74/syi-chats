@@ -34,14 +34,11 @@ export class AuthService {
         private readonly bcryptService: BcryptService
     ) { }
 
-    private async saveVerificationCode(verification: Omit<IVerification, '_id'| 'attempts'>): Promise<
-        [Awaited<ReturnType<AuthRepository['saveVerificationCode']>>, Awaited<ReturnType<ResendService['sendCode']>>]
-    > {
+    private async saveVerificationCode(verification: Omit<IVerification, '_id'| 'attempts'>): Promise<void> {
 
-        return Promise.all([
-            this.authRepository.saveVerificationCode(verification),
-            this.resendService.sendCode(verification.verification_code, verification.verification_identity) // memblocking agak cukup lumayan lama
-        ])
+        const saved = await this.authRepository.saveVerificationCode(verification)
+        this.resendService.sendCode(verification.verification_code, verification.verification_identity) // if this fn use await it will be blocking process for a quite t
+        return saved
 
     }
 
@@ -88,29 +85,33 @@ export class AuthService {
         try {
             const isValidVerificationCode = this.regexService.codeVerificationChecker(verification_code);
             if (!isValidVerificationCode) throw new BadRequestException('Invalid code');
-            console.log("Masuk is valid")
+            // console.log("Valid code")
             if (!email.trim()) throw new BadRequestException('email is required');
-            console.log("Udah di trim")
+            // console.log("Trimmed")
             const isEmail = this.regexService.emailChecker(email);
-            console.log("Udah di check format email")
+            // console.log("Valid format email")
             if (!isEmail) throw new BadRequestException('email is invalid format');
-            const [verification, emailExist] = await Promise.all([
-                this.authRepository.findCodeVerificationByEmail(email),
+            const [consume, emailExist] = await Promise.all([
+                this.authRepository.consumeVerificationCode(email, "email", verification_code),
                 this.userRepository.findOneByEmail(email)
 
             ]);
-            console.log("verifiation ketemu ga", verification)
-            console.log("emailExist ketemu ga", emailExist)
+            console.log(consume)
+            // console.log(">>>>", verification) // debugging
+            // console.log(">>>>", emailExist) // debugging
             if (!emailExist) throw new BadRequestException("please register first");
             if (emailExist.is_verified) throw new BadRequestException("you already verified");
-            if (!verification) throw new BadRequestException("Invalid code");
-            if (verification.attempts >= 5) throw new BadRequestException("Limit exceed please request code again");
-            if (verification.verification_code !== verification_code) {
-                await this.authRepository.incrementVerificationAttemps(verification);
-                throw new BadRequestException("Incorrect verification code");
+            if (!consume) {
+                this.authRepository.incrementVerificationAttemps(emailExist.email).catch((err) => {
+                    console.log("[increment] failed causes >>>", err)
+                });
+                throw new BadRequestException("Invalid or expired verification code");
+
             }
             await this.userService.activatingAccount(email);
-            await this.authRepository.deleteVerification(email, 'email')
+            this.authRepository.deleteVerification(email, 'email').catch((err) => {
+                console.log("[delete verification code] causes >>>", err)
+            })
             return 'Your account is activated now';
         } catch (error) {
             throw error
