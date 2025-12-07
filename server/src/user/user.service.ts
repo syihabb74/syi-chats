@@ -41,7 +41,9 @@ export class UserService {
         async signIn(user: IUserLogin): Promise<{ access_token: string, refresh_token: string }> {
     
             const isEmailLogin = this.regexService.emailChecker(user.identifier);
-            const userLogin : Omit<IUser, 'createdAt' | 'updatedAt' > | null = isEmailLogin ? await this.userRepository.findOneByEmail(user.identifier) : await this.userRepository.findOneByUsername(user.identifier);
+            const userLogin : Omit<IUser, 'createdAt' | 'updatedAt' > | null = isEmailLogin ?
+                                                                               await this.userRepository.findOneByEmail(user.identifier) :
+                                                                               await this.userRepository.findOneByUsername(user.identifier);
             if (!userLogin) throw new BadRequestException('Please register first');
             const validPassword = this.bcryptService.comparePassword(user.password, userLogin.password);
             if (!validPassword) throw new BadRequestException('Invalid email / password');
