@@ -100,6 +100,7 @@ export class AuthController {
     ) : Promise<Record<string, any>> {
 
         try {
+            console.log(emailResetDto)
             const {email} = emailResetDto
             const message = await this.authService.forgotPassword(email);
             return {message}

@@ -6,6 +6,7 @@ export default interface IResetPassword {
     email : string
     reset_token : string
     expires_at : string | Date
+    attempt : number
 
 
 }

@@ -19,9 +19,9 @@ export class AuthGuard implements CanActivate {
             
             const ctxRun = context.getType()
             if (ctxRun == "http") {
-                this.handleHttpRequest(context)
+                await this.handleHttpRequest(context)
             } else if (ctxRun == "ws") {
-                this.handleWsRequest(context)
+                await this.handleWsRequest(context)
             }
             return false
             

@@ -43,18 +43,24 @@ export class AuthService {
 
     private async saveVerificationCode(verification: Omit<IVerification, '_id'| 'attempts'>): Promise<void> {
 
-        const saved = await this.authRepository.saveVerificationCode(verification)
-        this.resendService.sendCode(verification.verification_code, verification.verification_identity) // if this fn use await it will be blocking process for a quite t
-        return saved
+        await this.authRepository.saveVerificationCode(verification)
+        this.resendService.sendCode(verification.verification_code, verification.verification_identity)
+        .catch((error) => {
+            this.logger.error("Send password reset failed causes", error?.stack, ResendService.name)
+        })
 
     }
 
-    private validationEmail (email : string) {
-        if (!email.trim()) throw new BadRequestException('email is required');
-            this.logger.debug("Email trimmed validation passed");
-            const isEmail = this.regexService.emailChecker(email);
-            if (!isEmail) throw new BadRequestException('email is invalid format');
-            this.logger.debug("Email Format validation passed")
+    private async validationUser (email : string, message? : string) {
+            if (!email.trim()) throw new BadRequestException('email is required');
+                this.logger.debug("Email trimmed validation passed");
+                const isEmail = this.regexService.emailChecker(email);
+                if (!isEmail) {throw new BadRequestException('email is invalid format')};
+                this.logger.debug("Email Format validation passed")
+                const emailExist = await this.userRepository.findOneByEmail(email)
+                if (!emailExist) throw new NotFoundException(message ? message : "email not found please register first")
+                this.logger.log("validation user passed")
+                return emailExist
     }
 
     private async createCodeSaveAndSending(email: string): Promise<void> {
@@ -78,16 +84,12 @@ export class AuthService {
     async getNewCode(email: string): Promise<string> {
 
         try {
-            this.validationEmail(email)
-            const [verification, emailExist] = await Promise.all([
-                this.authRepository.findCodeVerificationByEmail(email),
-                this.userRepository.findOneByEmail(email)
-
-            ]);
-            if (!emailExist) throw new NotFoundException("please register first")
-            if (!verification) throw new NotFoundException('Email not found please register first');
-            this.logger.debug("email exist & verification validation passed")
-            await this.authRepository.updateIsNewRequestVerification(verification)
+            const user = await this.validationUser(email)
+            if (user.is_verified) throw new BadRequestException("You are already verified");
+            const verification = await this.authRepository.findCodeVerificationByEmail(email);
+            if (verification) {
+                await this.authRepository.updateIsNewRequestVerification(verification);
+            }
             await this.createCodeSaveAndSending(email);
             this.logger.log("Get new code passed")
             return 'New verification code has been sending to your gmail please check your email!!'
@@ -104,22 +106,16 @@ export class AuthService {
             const isValidVerificationCode = this.regexService.codeVerificationChecker(verification_code);
             if (!isValidVerificationCode) throw new BadRequestException('Invalid code');
             this.logger.debug("Valid verification validation code passed")
-            this.validationEmail(email)
             const [consume, emailExist] = await Promise.all([
                 this.authRepository.consumeVerificationCode(email, "email", verification_code),
-                this.userRepository.findOneByEmail(email)
-
+                this.validationUser(email)
             ]);
-            if (!emailExist) {
-                throw new BadRequestException("please register first")
-            };
-            this.logger.debug("Db email checking validation passed")
             if (emailExist.is_verified) throw new BadRequestException("you already verified");
             if (!consume) {
                 this.authRepository.incrementVerificationAttemps(emailExist.email).catch((err) => {
                     this.logger.warn(`increment failed : ${err}`)
                 });
-                throw new BadRequestException("Invalid or expired verification code");
+                throw new BadRequestException("invalid or expired verification code");
 
             }
             await this.userService.activatingAccount(email);
@@ -139,7 +135,7 @@ export class AuthService {
 
         try {
             const result = await this.userService.signUp(user);
-            this.createCodeSaveAndSending(result.email);
+            await this.createCodeSaveAndSending(result.email);
             return "Register successfully "
         } catch (error) {
             this.logger.error("Signup account failed cause", error?.stack)
@@ -169,7 +165,7 @@ export class AuthService {
     async getNewAccessToken (refresh_token : string) : Promise<Record<string, string>> {
 
         try {
-             const { _id : id, identifier }: IPayload = await this.jwtService.verifyToken(refresh_token, process.env.JOSE_SECRET_REFRESH_KEY as string);
+             const { _id : id, identifier }: IPayload = await this.jwtService.verifyToken(refresh_token, JWT_SECRETS.REFRESH);
              const identifierFind = this.regexService.emailChecker(identifier) ? this.userRepository.findOneByEmail(identifier) : this.userRepository.findOneByUsername(identifier);
              const [tokenExist, identifierExist] = await Promise.all(
                 [
@@ -186,7 +182,6 @@ export class AuthService {
             )
 
             await this.authRepository.changeIsUsedRefreshToken(refresh_token)
-            console.log(refresh_token, ref_token)
             await this.authRepository.saveRefreshToken({
                 refresh_token : ref_token,
                 identifier : identifier,
@@ -206,15 +201,13 @@ export class AuthService {
     async forgotPassword(email: string): Promise<string> {
 
         try {
-            this.validationEmail(email)
-            const emailExist = await this.userRepository.findOneByEmail(email);
-            if (!emailExist) throw new BadRequestException("Please register first");
+            const emailExist = await this.validationUser(email)
             if (!emailExist.is_verified) throw new BadRequestException("Please verify your account first");
             const payload = await this.jwtService.signToken({
                 _id: emailExist._id.toString(),
                 identifier: emailExist.email
             }, '15m', JWT_SECRETS.RESET)
-            const resetPassword: Omit<IResetPassword, '_id'> = {
+            const resetPassword: Omit<IResetPassword, '_id' | 'attempt'> = {
                 email: email,
                 reset_token: payload,
                 expires_at: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
@@ -235,27 +228,30 @@ export class AuthService {
     async changePassword(newPassword: string, newConfirmationPassword: string, reset_token: string): Promise<string> {
 
         try {
-            const { _, identifier: email }: IPayload = await this.jwtService.verifyToken(reset_token, JWT_SECRETS.RESET);
+            const { identifier: email }: IPayload = await this.jwtService.verifyToken(reset_token, JWT_SECRETS.RESET);
             const [userExist, tokenExist] = await Promise.all([
-                await this.userRepository.findOneByEmail(email),
-                await this.authRepository.findTokenResetPassword(reset_token, email)
+                this.userRepository.findOneByEmail(email),
+                this.authRepository.findTokenResetPassword(reset_token, email)
             ]);
-            if (!userExist) throw new UnauthorizedException('Invalid token');
-            if (!tokenExist) throw new UnauthorizedException('Invalid token');
-            if (newPassword !== newConfirmationPassword) {
-                if (tokenExist.attempts > 2) {
-                    await this.authRepository.deleteResetPassword(email);
-                    throw new BadRequestException("Limit exceed please request token again");
-                }
-                await this.authRepository.incrementResetPasswordAttempts(tokenExist)
-                throw new BadRequestException("Confirmation password not match");
-            };
-            if (tokenExist.attempts >= 3) {
+            if (!userExist || !tokenExist) throw new UnauthorizedException('Invalid token');
+            if (tokenExist.attempt >= 3) {
                 await this.authRepository.deleteResetPassword(email);
                 throw new BadRequestException("Limit exceed please request token again");
             };
+            if (newPassword !== newConfirmationPassword) {
+                await this.authRepository.incrementResetPasswordAttempts(tokenExist)
+                if (tokenExist.attempt + 1 >= 3) {
+                    await this.authRepository.deleteResetPassword(email);
+                    throw new BadRequestException("Limit exceeded, please request token again");
+                }
+                throw new BadRequestException("Confirmation password not match");
+            };
             const hashedPassword = this.bcryptService.hashPassword(newPassword);
-            await this.userRepository.changePassword(email, hashedPassword);
+            await Promise.all([
+            this.userRepository.changePassword(email, hashedPassword),
+            this.authRepository.deleteResetPassword(email)
+            ]);
+            this.logger.log("Change password passed")
             return 'Password has been successfully changed'
         } catch (error) {
             this.logger.error("Change password failed cause", error?.stack)

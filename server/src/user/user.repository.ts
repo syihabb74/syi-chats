@@ -6,6 +6,7 @@ import {
 } from "mongoose";
 import { User } from "src/user/schemas/user.schema";
 import IUserRegister from "src/common/interfaces/user.register.interfaces";
+import IUser from "./interfaces/user.interface";
 
 
 
@@ -30,7 +31,7 @@ export class UserRepository {
     }
 
 
-    async findOneByEmail(email: string) : Promise<User | null> {
+    async findOneByEmail(email: string) : Promise<Omit<IUser, 'createdAt'| 'updatedAt'> | null> {
 
         try {
             return await this.userModel.findOne({email}).select('-createdAt -updatedAt').lean().exec();
@@ -42,7 +43,7 @@ export class UserRepository {
     }
 
 
-    async findOneByUsername(username : string) : Promise<User | null> {
+    async findOneByUsername(username : string) : Promise<Omit<IUser, 'createdAt'| 'updatedAt'> | null> {
 
         try {
             return await this.userModel.findOne({username}).select('-createdAt -updatedAt').lean().exec();

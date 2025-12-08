@@ -38,7 +38,7 @@ export class ResetPassword {
     required : true,
     default : 0
    })
-   attempts : number
+   attempt : number
 
 
 }

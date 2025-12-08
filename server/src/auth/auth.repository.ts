@@ -1,12 +1,11 @@
-import { 
-     Verification,
-     VerificationDocument 
+import {
+    Verification
 } from "./schemas/verification.schema";
-import { 
+import {
     ResetPassword,
     ResetPasswordDocument
 } from "./schemas/reset.password.schema";
-import {  Model } from "mongoose";
+import { Model } from "mongoose";
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Refresher } from "src/auth/schemas/refresher.token.schema";
@@ -20,43 +19,28 @@ import IResetPassword from "./interfaces/reset.password.interfaces";
 export class AuthRepository {
 
     constructor(
-        @InjectModel(Refresher.name) private readonly refresherModel : Model<Refresher>,
-        @InjectModel(Verification.name) private readonly verificationModel : Model<Verification>,
-        @InjectModel(ResetPassword.name) private readonly resetPasswordModel : Model<ResetPassword>
+        @InjectModel(Refresher.name) private readonly refresherModel: Model<Refresher>,
+        @InjectModel(Verification.name) private readonly verificationModel: Model<Verification>,
+        @InjectModel(ResetPassword.name) private readonly resetPasswordModel: Model<ResetPassword>
     ) { }
 
-    async saveRefreshToken(refresh_token : Omit<IRefresher, '_id' | 'is_used'>) : Promise<Refresher> {
+    async saveRefreshToken(refresh_token: Omit<IRefresher, '_id' | 'is_used'>): Promise<void> {
+
         try {
+
             const createRefresher = new this.refresherModel(refresh_token)
-            return (await createRefresher.save()).toJSON();
+            await createRefresher.save().then(doc => doc.toJSON())
+
         } catch (error) {
+
             throw error
+
         }
 
 
     }
 
-    async findRefreshToken (refresh_token : string, identifier : string) : Promise<IRefresher | null> {
-        try {
-            const refresher = await this.refresherModel.findOne({refresh_token, identifier, is_used : false}).lean().exec()
-            return refresher
-        } catch (error) {
-            throw error
-        }
-
-    }
-
-    async changeIsUsedRefreshToken (old_refresh_token : string) : Promise<void> {
-
-         try {
-            await this.refresherModel.updateOne({refresh_token : old_refresh_token},{$set : {is_used : true}});
-        } catch (error) {
-            throw error
-        }
-
-    }
-
-    async saveVerificationCode (verification : Omit<IVerification, '_id' | 'attempts'>) : Promise<void> {
+    async saveVerificationCode(verification: Omit<IVerification, '_id' | 'attempts'>): Promise<void> {
 
         try {
             const createVerificationCode = new this.verificationModel(verification);
@@ -67,137 +51,136 @@ export class AuthRepository {
 
     }
 
-    async consumeVerificationCode (email : string, type : string, verification_code : string) : Promise<IVerification | null> {
+    async saveResetPasswordToken(reset_token: Omit<IResetPassword, '_id' | 'attempt'>): Promise<void> {
 
         try {
-            return await this.verificationModel.findOneAndUpdate(
-                {
-                    verification_identity : email,
-                    verification_code,
-                    type,
-                    is_new_request : false,
-                    is_used : false,
-                    attempts : { $lt : 5},
-                    expires_at : {$gt : new Date()}
-                },
-                {
-                    $set : {is_used : true}
-                },
-                {
-                    new : true
-                }
-            ).lean().exec()
-        } catch (error) {
-            throw error
-        }
-   
-
-    }
-
-    async findCodeVerificationByEmail (email : string) : Promise<IVerification | null> {
-
-        try {
-            return await this.verificationModel.findOne({verification_identity : email, type : 'email' ,is_new_request : false}).lean().exec()
-        } catch (error) {
-            throw error
-        }
-   
-
-    }
-    
-    async deleteVerification (email : string, type : string) : Promise<void> {
-
-        try {
-            await this.verificationModel.deleteMany({verification_identity : email, type: type }).exec();
+            const createResetPassword = new this.resetPasswordModel(reset_token);
+            await createResetPassword.save()
         } catch (error) {
             throw error
         }
 
-    }
-
-    async updateIsNewRequestVerification({verification_identity} : Pick<IVerification, 'verification_identity'>) : Promise<void> {
-       
-        try {
-        await this.verificationModel.findOneAndUpdate(
-            {
-                verification_identity},
-                {$set : {is_new_request : true}
-            }, 
-            {
-                new : true
-            }
-    ).lean().exec()
-        //   verificationDoc.is_new_request = true
-        //   await verificationDoc.save();  old code hydrated document
-        } catch (error) {
-          throw error  
-        }
-      
 
     }
 
-    async incrementVerificationAttemps (verification_identity : string ) : Promise<void> {
+    async findRefreshToken(refresh_token: string, identifier: string): Promise<IRefresher | null> {
 
-        try {
-            await this.verificationModel.findOneAndUpdate({
-                verification_identity,
-                attempts : {$lt : 5}
-            }, 
+        return this.refresherModel.findOne({ refresh_token, identifier, is_used: false }).lean().exec()
+
+    }
+
+    async changeIsUsedRefreshToken(old_refresh_token: string): Promise<void> {
+
+        await this.refresherModel.updateOne({ refresh_token: old_refresh_token }, { $set: { is_used: true } });
+
+
+    }
+
+
+    async consumeVerificationCode(email: string, type: string, verification_code: string): Promise<IVerification | null> {
+
+        return this.verificationModel.findOneAndUpdate(
             {
-                $inc : {attempts : 1}
+                verification_identity: email,
+                verification_code,
+                type,
+                is_new_request: false,
+                is_used: false,
+                attempts: { $lt: 5 },
+                expires_at: { $gt: new Date() }
             },
             {
-                new : true
+                $set: { is_used: true }
+            },
+            {
+                new: true
             }
         ).lean().exec()
-            // await verificationDoc.updateOne({$inc : { attempts : 1 }}).lean().exec() // hidrated doc old code
-        } catch (error) {
-            throw error
-        }
+
 
     }
 
-    async saveResetPasswordToken (reset_token : Omit<IResetPassword, '_id'>) : Promise<IResetPassword> {
+    async findCodeVerificationByEmail(email: string): Promise<IVerification | null> {
 
-        try {
-            return (await new this.resetPasswordModel(reset_token).save()).toJSON();
-        } catch (error) {
-            throw error
-        }
+        return this.verificationModel.findOne({ verification_identity: email, type: 'email', is_new_request: false }).lean().exec()
 
     }
 
-    async findTokenResetPassword(reset_token : string, email : string) : Promise< ResetPasswordDocument | null> {
+    async deleteVerification(email: string, type: string): Promise<void> {
 
-        try {
-            return await this.resetPasswordModel.findOne({reset_token, email})
-        } catch (error) {
-            throw error
-        }
+        await this.verificationModel.deleteMany({ verification_identity: email, type: type }).exec();
 
     }
 
-    async incrementResetPasswordAttempts (resetPasswordDoc : ResetPasswordDocument) {
+    async updateIsNewRequestVerification({ verification_identity }: Pick<IVerification, 'verification_identity'>): Promise<void> {
 
-         try {
-            await resetPasswordDoc.updateOne({$inc : { attempts : 1 }}).lean().exec()
-        } catch (error) {
-            throw error
-        }
+        await this.verificationModel.findOneAndUpdate(
+            {
+                verification_identity,
+                is_new_request: false
+            },
+            {
+                $set: { is_new_request: true }
+            },
+            {
+                new: true
+            }
+        ).lean().exec()
+
+
 
     }
 
-    async deleteResetPassword (email : string) : Promise<void> {
+    async incrementVerificationAttemps(verification_identity: string): Promise<void> {
 
-        try {
-            await this.resetPasswordModel.deleteMany({email : email}).lean().exec();
-        } catch (error) {
-            throw error
-        }
+        await this.verificationModel.findOneAndUpdate({
+            verification_identity,
+            attempts: { $lt: 5 }
+        },
+            {
+                $inc: { attempts: 1 }
+            },
+            {
+                new: true
+            }
+        ).lean().exec()
+
 
     }
 
-  
+
+
+    async findTokenResetPassword(reset_token: string, email: string): Promise<IResetPassword | null> {
+
+
+        return this.resetPasswordModel.findOne({ reset_token, email }).select('-expires_at').lean().exec()
+
+    }
+
+    async incrementResetPasswordAttempts(resetPassword: Omit<IResetPassword, 'expires_at'>) {
+
+        await this.resetPasswordModel.findOneAndUpdate(
+            {
+                email: resetPassword.email,
+                reset_token: resetPassword.reset_token,
+                attempt: { $lt: 3 }
+            },
+            {
+                $inc: { attempt: 1 }
+            },
+            {
+                new: true
+            }
+        ).exec()
+    }
+
+    async deleteResetPassword(email: string): Promise<void> {
+
+        await this.resetPasswordModel.deleteMany({ email: email }).exec();
+
+    }
+
+
 
 
 }
