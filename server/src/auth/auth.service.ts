@@ -10,7 +10,7 @@ import { AuthRepository } from "./auth.repository";
 import { ResendService } from "src/common/resend/resend.service";
 import { RegexService } from "src/common/helpers/regex.service";
 import { UserRepository } from "src/user/user.repository";
-import { JwtService } from "src/common/helpers/jwt.service";
+import { JWT_TYPE, JwtService } from "src/common/helpers/jwt.service";
 import { BcryptService } from "src/common/helpers/bcrypt.service";
 import IUserLogin from "src/common/interfaces/user.login.interfaces";
 import IUserRegister from "src/common/interfaces/user.register.interfaces";
@@ -151,16 +151,6 @@ export class AuthService {
                 }
     }
 
-    private async createAccessAndRefreshToken (id : Pick<IPayload, '_id'> , identifier : string): Promise<string[]> {
-        const [access_token, ref_token] = await Promise.all(
-                [
-                    this.jwtService.signToken({ _id: id._id, identifier }, "15m", JWT_SECRETS.ACCESS),
-                    this.jwtService.signToken({ _id: id._id, identifier }, "7d", JWT_SECRETS.REFRESH)
-                ]
-            )
-        return [access_token, ref_token]
-    }
-
     async getNewCode(email: string): Promise<string> {
 
         try {
@@ -229,10 +219,10 @@ export class AuthService {
     async getNewAccessToken (refresh_token : string) : Promise<Record<string, string>> {
 
         try {
-            const { _id : id, identifier }: IPayload = await this.jwtService.verifyToken(refresh_token, JWT_SECRETS.REFRESH);
+            const { _id : id, identifier }: IPayload = await this.jwtService.verifyToken(refresh_token, JWT_TYPE.REFRESH);
             const tokenExist = await this.authRepository.findRefreshToken(refresh_token, identifier)
             if (!tokenExist) throw new UnauthorizedException('Invalid or expired refresh token');
-            const [access_token, ref_token] = await this.createAccessAndRefreshToken({_id : id}, identifier)
+            const [access_token, ref_token] = await this.jwtService.createAccessAndRefreshToken({_id : id}, identifier)
             await Promise.all([
                 this.authRepository.changeIsUsedRefreshToken(refresh_token),
                 this.saveRefreshTokenToDb({identifier, refresh_token : ref_token})
@@ -253,7 +243,7 @@ export class AuthService {
 
         try {
             const emailExist = await this.validateUserByEmail(email)
-            const reset_token = await this.jwtService.signToken({_id: emailExist._id.toString(),identifier: emailExist.email}, '15m', JWT_SECRETS.RESET)
+            const reset_token = await this.jwtService.signToken({_id: emailExist._id.toString(),identifier: emailExist.email}, '15m', JWT_TYPE.RESET)
             await this.saveResetPasswordToDb(email,reset_token)
             this.resendService.sendPasswordReset(email, `http://localhost:3000/password/reset/verify-token?token=${reset_token}`)
             .catch((error) => {
@@ -270,7 +260,7 @@ export class AuthService {
     async changePassword(changePassword : IChangePassword): Promise<string> {
 
         try {
-            const { identifier: email }: IPayload = await this.jwtService.verifyToken(changePassword.reset_token, JWT_SECRETS.RESET);
+            const { identifier: email }: IPayload = await this.jwtService.verifyToken(changePassword.reset_token, JWT_TYPE.RESET);
             const {tokenExist} = await this.validateResetToken(changePassword.reset_token, email)
             await this.checkAttemptLimit(tokenExist, email)
             await this.validatePasswordMatch(changePassword.newPassword, changePassword.confirmPassword, tokenExist, email)

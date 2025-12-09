@@ -5,7 +5,7 @@ import { UpdateChatDto } from './dto/update-chat.dto';
 import { Server } from 'ws';
 import { UseFilters, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/auth.guard';
-import { JwtService } from 'src/common/helpers/jwt.service';
+import { JWT_TYPE, JwtService } from 'src/common/helpers/jwt.service';
 import { WsExceptionFilter } from 'src/exceptions/ws.exception';
 
 @UseFilters(WsExceptionFilter)
@@ -33,7 +33,7 @@ export class ChatGateway {
         client.close();
         return;
       }
-      await this.jwtService.verifyToken(token, process.env.JOSE_SECRET_ACCESS_TOKEN_KEY as string)
+      await this.jwtService.verifyToken(token, JWT_TYPE.ACCESS)
       client.handshakeHeaders = request.headers;
       client.upgradeReq = request;
 

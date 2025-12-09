@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { WsException } from "@nestjs/websockets";
 import { Request } from "express";
-import { JwtService } from "src/common/helpers/jwt.service";
+import { JWT_TYPE, JwtService } from "src/common/helpers/jwt.service";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -19,11 +19,11 @@ export class AuthGuard implements CanActivate {
             
             const ctxRun = context.getType()
             if (ctxRun == "http") {
-                await this.handleHttpRequest(context)
-            } else if (ctxRun == "ws") {
-                await this.handleWsRequest(context)
+                console.log("enter here")
+                return await this.handleHttpRequest(context)
+            } else { // if (ctxRun == "ws") for upcoming another handleRequest
+                return await this.handleWsRequest(context)
             }
-            return false
             
         } catch (error) {
             throw error            
@@ -40,7 +40,8 @@ export class AuthGuard implements CanActivate {
             const client = context.switchToWs().getClient();
                 const token = this.extractTokenFromWs(client)
                 if (!token) throw new WsException("Unauthorized")
-                const payload = await this.jwtService.verifyToken(token, process.env.JOSE_SECRET_ACCESS_TOKEN_KEY as string);
+                const payload = await this.jwtService.verifyToken(token, JWT_TYPE.ACCESS);
+                
                 client['user'] = payload
                 return true
             
@@ -59,12 +60,13 @@ export class AuthGuard implements CanActivate {
                 const request = context.switchToHttp().getRequest();
                 const token = this.extractTokenFromHeaderHttp(request);
                 if (!token) throw new UnauthorizedException("Unauthorized")
-                const payload = await this.jwtService.verifyToken(token, process.env.JOSE_SECRET_ACCESS_TOKEN_KEY as string);
+                const payload = await this.jwtService.verifyToken(token, JWT_TYPE.ACCESS);
+                console.log("Validate here")
                 request['user'] = payload;
                 return true
 
         } catch (error) {
-            
+            console.log("error")
             throw error
 
         }
@@ -75,6 +77,7 @@ export class AuthGuard implements CanActivate {
 
         if (!request.headers?.authorization) return undefined;
         const [type, token] = request.headers.authorization?.split(' ') ?? [];
+        console.log(token)
         return type === 'Bearer' ? token : undefined
 
     }
