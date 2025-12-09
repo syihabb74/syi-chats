@@ -23,13 +23,14 @@ import {
     VERIFICATION_CODE_TTL_MS,
     REFRESH_TOKEN_TTL_MS
   } from "src/common/constants/jwt.constants";
-
+import IRefresher from "./interfaces/refresher.interfaces";
+import IChangePassword from "./interfaces/change-password.interface";
+import IUser from "src/user/interfaces/user.interface";
 
 @Injectable()
 export class AuthService {
 
     private readonly logger = new Logger(AuthService.name)
-
 
     constructor(
         private readonly userService: UserService,
@@ -51,7 +52,24 @@ export class AuthService {
 
     }
 
-    private async validationUser (email : string, message? : string) {
+     private async saveRefreshTokenToDb (refreshToken : Pick<IRefresher, 'identifier' | 'refresh_token'>) {
+        await this.authRepository.saveRefreshToken({ 
+                identifier : refreshToken.identifier,
+                refresh_token : refreshToken.refresh_token,
+                expires_at : new Date(Date.now() + ( REFRESH_TOKEN_TTL_MS ))
+            })
+    }
+
+    private async saveResetPasswordToDb(email: string, reset_token : string) : Promise<void> {
+        const resetPassword: Omit<IResetPassword, '_id' | 'attempt'> = {
+                email: email,
+                reset_token: reset_token,
+                expires_at: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+            }
+            await this.authRepository.saveResetPasswordToken(resetPassword);
+    }
+
+    private async validateUserByEmail (email : string, message? : string) : Promise<Omit<IUser, 'createdAt' | 'updatedAt'>> {
             if (!email.trim()) throw new BadRequestException('email is required');
                 this.logger.debug("Email trimmed validation passed");
                 const isEmail = this.regexService.emailChecker(email);
@@ -62,6 +80,44 @@ export class AuthService {
                 this.logger.log("validation user passed")
                 return emailExist
     }
+
+    private async validateResetToken (token : string, email : string) : Promise<Record<string, any>> {
+        const [userExist, tokenExist] = await Promise.all([
+                this.userRepository.findOneByEmail(email),
+                this.authRepository.findTokenResetPassword(token, email)
+            ]);
+            if (!userExist || !tokenExist) throw new UnauthorizedException('Invalid token');
+            return {userExist, tokenExist}
+    }
+
+     private async validatePasswordMatch (password : string , confirmationPassword : string,tokenResetPassword : IResetPassword, email : string) {
+        if (password !== confirmationPassword) {
+             await this.handlePasswordMismatch(tokenResetPassword, email)
+             throw new BadRequestException("Confirmation password not match");
+        }
+    }
+
+    private validateVerificationCode(verification_code: string) : void {
+            const isValidVerificationCode = this.regexService.codeVerificationChecker(verification_code);
+            if (!isValidVerificationCode) throw new BadRequestException('Invalid code');
+            this.logger.debug("Valid verification validation code passed")
+    }
+
+    private async validateActivateAccount (email : string, verificationCode : string) {
+        const [consume, emailExist] = await Promise.all([
+                this.authRepository.consumeVerificationCode(email, "email", verificationCode),
+                this.validateUserByEmail(email)
+            ]);
+            if (emailExist.is_verified) throw new BadRequestException("you already verified");
+            if (!consume) {
+                this.authRepository.incrementVerificationAttemps(emailExist.email).catch((err) => {
+                    this.logger.warn(`increment failed : ${err}`)
+                });
+                throw new BadRequestException("invalid or expired verification code");
+
+            }
+    }
+
 
     private async createCodeSaveAndSending(email: string): Promise<void> {
 
@@ -78,13 +134,37 @@ export class AuthService {
             throw error
         }
 
+    }
 
+    private async checkAttemptLimit (tokenResetPassword : IResetPassword, email : string ) : Promise<void> {
+        if (tokenResetPassword.attempt >= 3) {
+                await this.authRepository.deleteResetPassword(email);
+                throw new BadRequestException("Limit exceed please request token again");
+            };
+    } 
+
+    private async handlePasswordMismatch(tokenResetPassword : IResetPassword, email : string) : Promise<void> {
+                await this.authRepository.incrementResetPasswordAttempts(tokenResetPassword)
+                if (tokenResetPassword.attempt + 1 >= 3) {
+                    await this.authRepository.deleteResetPassword(email);
+                    throw new BadRequestException("Limit exceeded, please request token again");
+                }
+    }
+
+    private async createAccessAndRefreshToken (id : Pick<IPayload, '_id'> , identifier : string): Promise<string[]> {
+        const [access_token, ref_token] = await Promise.all(
+                [
+                    this.jwtService.signToken({ _id: id._id, identifier }, "15m", JWT_SECRETS.ACCESS),
+                    this.jwtService.signToken({ _id: id._id, identifier }, "7d", JWT_SECRETS.REFRESH)
+                ]
+            )
+        return [access_token, ref_token]
     }
 
     async getNewCode(email: string): Promise<string> {
 
         try {
-            const user = await this.validationUser(email)
+            const user = await this.validateUserByEmail(email)
             if (user.is_verified) throw new BadRequestException("You are already verified");
             const verification = await this.authRepository.findCodeVerificationByEmail(email);
             if (verification) {
@@ -101,23 +181,10 @@ export class AuthService {
 
     }
 
-    async activateAccountEmail(email: string, verification_code: string): Promise<string> {
+    async activateAccountEmail(email: string, verificationCode: string): Promise<string> {
         try {
-            const isValidVerificationCode = this.regexService.codeVerificationChecker(verification_code);
-            if (!isValidVerificationCode) throw new BadRequestException('Invalid code');
-            this.logger.debug("Valid verification validation code passed")
-            const [consume, emailExist] = await Promise.all([
-                this.authRepository.consumeVerificationCode(email, "email", verification_code),
-                this.validationUser(email)
-            ]);
-            if (emailExist.is_verified) throw new BadRequestException("you already verified");
-            if (!consume) {
-                this.authRepository.incrementVerificationAttemps(emailExist.email).catch((err) => {
-                    this.logger.warn(`increment failed : ${err}`)
-                });
-                throw new BadRequestException("invalid or expired verification code");
-
-            }
+            this.validateVerificationCode(verificationCode)
+            await this.validateActivateAccount(email, verificationCode)
             await this.userService.activatingAccount(email);
             this.authRepository.deleteVerification(email, 'email').catch((err) => {
                 this.logger.warn(`delete verification failed : ${err}`)
@@ -145,15 +212,12 @@ export class AuthService {
 
     }
 
+
     async signIn(user: IUserLogin): Promise<Record<string, string>> {
 
         try {
             const signIn = await this.userService.signIn(user);
-            await this.authRepository.saveRefreshToken({
-                identifier : user.identifier,
-                refresh_token : signIn.refresh_token,
-                expires_at : new Date(Date.now() + ( REFRESH_TOKEN_TTL_MS ))
-            })
+            await this.saveRefreshTokenToDb({identifier : user.identifier, refresh_token : signIn.refresh_token})
             return signIn
         } catch (error) {
             this.logger.error("Signin account failed cause", error?.stack)
@@ -165,28 +229,15 @@ export class AuthService {
     async getNewAccessToken (refresh_token : string) : Promise<Record<string, string>> {
 
         try {
-             const { _id : id, identifier }: IPayload = await this.jwtService.verifyToken(refresh_token, JWT_SECRETS.REFRESH);
-             const identifierFind = this.regexService.emailChecker(identifier) ? this.userRepository.findOneByEmail(identifier) : this.userRepository.findOneByUsername(identifier);
-             const [tokenExist, identifierExist] = await Promise.all(
-                [
-                    this.authRepository.findRefreshToken(refresh_token, identifier),
-                     identifierFind
-                ]
-             )
-             if (!tokenExist || !identifierExist) throw new UnauthorizedException('refresh token invalid');
-              const [access_token, ref_token] = await Promise.all(
-                [
-                    this.jwtService.signToken({ _id: id, identifier }, "15m", JWT_SECRETS.ACCESS),
-                    this.jwtService.signToken({ _id: id, identifier }, "7d", JWT_SECRETS.REFRESH)
-                ]
-            )
-
-            await this.authRepository.changeIsUsedRefreshToken(refresh_token)
-            await this.authRepository.saveRefreshToken({
-                refresh_token : ref_token,
-                identifier : identifier,
-                expires_at : new Date(Date.now() + ( REFRESH_TOKEN_TTL_MS ))
-            });
+            const { _id : id, identifier }: IPayload = await this.jwtService.verifyToken(refresh_token, JWT_SECRETS.REFRESH);
+            const tokenExist = await this.authRepository.findRefreshToken(refresh_token, identifier)
+            if (!tokenExist) throw new UnauthorizedException('Invalid or expired refresh token');
+            const [access_token, ref_token] = await this.createAccessAndRefreshToken({_id : id}, identifier)
+            await Promise.all([
+                this.authRepository.changeIsUsedRefreshToken(refresh_token),
+                this.saveRefreshTokenToDb({identifier, refresh_token : ref_token})
+            ]);
+            this.logger.log("New access token generated")
             return {
                 access_token,
                 refresh_token : ref_token
@@ -201,19 +252,10 @@ export class AuthService {
     async forgotPassword(email: string): Promise<string> {
 
         try {
-            const emailExist = await this.validationUser(email)
-            if (!emailExist.is_verified) throw new BadRequestException("Please verify your account first");
-            const payload = await this.jwtService.signToken({
-                _id: emailExist._id.toString(),
-                identifier: emailExist.email
-            }, '15m', JWT_SECRETS.RESET)
-            const resetPassword: Omit<IResetPassword, '_id' | 'attempt'> = {
-                email: email,
-                reset_token: payload,
-                expires_at: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
-            }
-            await this.authRepository.saveResetPasswordToken(resetPassword);
-            this.resendService.sendPasswordReset(email, `http://localhost:3000/password/reset/verify-token?token=${payload}`)
+            const emailExist = await this.validateUserByEmail(email)
+            const reset_token = await this.jwtService.signToken({_id: emailExist._id.toString(),identifier: emailExist.email}, '15m', JWT_SECRETS.RESET)
+            await this.saveResetPasswordToDb(email,reset_token)
+            this.resendService.sendPasswordReset(email, `http://localhost:3000/password/reset/verify-token?token=${reset_token}`)
             .catch((error) => {
                 this.logger.error("Send password reset failed causes", error?.stack, ResendService.name)
             })
@@ -225,28 +267,14 @@ export class AuthService {
 
     }
 
-    async changePassword(newPassword: string, newConfirmationPassword: string, reset_token: string): Promise<string> {
+    async changePassword(changePassword : IChangePassword): Promise<string> {
 
         try {
-            const { identifier: email }: IPayload = await this.jwtService.verifyToken(reset_token, JWT_SECRETS.RESET);
-            const [userExist, tokenExist] = await Promise.all([
-                this.userRepository.findOneByEmail(email),
-                this.authRepository.findTokenResetPassword(reset_token, email)
-            ]);
-            if (!userExist || !tokenExist) throw new UnauthorizedException('Invalid token');
-            if (tokenExist.attempt >= 3) {
-                await this.authRepository.deleteResetPassword(email);
-                throw new BadRequestException("Limit exceed please request token again");
-            };
-            if (newPassword !== newConfirmationPassword) {
-                await this.authRepository.incrementResetPasswordAttempts(tokenExist)
-                if (tokenExist.attempt + 1 >= 3) {
-                    await this.authRepository.deleteResetPassword(email);
-                    throw new BadRequestException("Limit exceeded, please request token again");
-                }
-                throw new BadRequestException("Confirmation password not match");
-            };
-            const hashedPassword = this.bcryptService.hashPassword(newPassword);
+            const { identifier: email }: IPayload = await this.jwtService.verifyToken(changePassword.reset_token, JWT_SECRETS.RESET);
+            const {tokenExist} = await this.validateResetToken(changePassword.reset_token, email)
+            await this.checkAttemptLimit(tokenExist, email)
+            await this.validatePasswordMatch(changePassword.newPassword, changePassword.confirmPassword, tokenExist, email)
+            const hashedPassword = this.bcryptService.hashPassword(changePassword.newPassword);
             await Promise.all([
             this.userRepository.changePassword(email, hashedPassword),
             this.authRepository.deleteResetPassword(email)

@@ -20,7 +20,7 @@ export class ResetPasswordDto {
             minUppercase : 1,
             minNumbers : 1
     })
-    confirmationNewPassword : string
+    confirmPassword : string
 
 }
 

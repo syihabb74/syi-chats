@@ -23,16 +23,19 @@ export class UserService {
                 private readonly jwtService: JwtService
     ) {}
 
-     async signUp(user: IUserRegister) {
-    
-            const [registeredEmail, registeredUname] = await Promise.all(
+     async validateUserSignUp (email : string, username : string) : Promise<void> {
+        const [registeredEmail, registeredUname] = await Promise.all(
                 [
-                    this.userRepository.findOneByEmail(user.email),
-                    this.userRepository.findOneByUsername(user.username)
+                    this.userRepository.findOneByEmail(email),
+                    this.userRepository.findOneByUsername(username)
                 ]
             )
-            if (registeredEmail) throw new ConflictException('Email already registered');
-            if (registeredUname) throw new ConflictException('Username already registered');
+            if (registeredEmail || registeredUname) throw new ConflictException('Email already registered or Username already registered');
+     }
+
+     async signUp(user: IUserRegister) {
+    
+            await this.validateUserSignUp(user.email, user.username)
             user.password = this.bcryptService.hashPassword(user.password);
             return this.userRepository.register(user)
             

@@ -118,8 +118,8 @@ export class AuthController {
     ) : Promise<Record<string, any>> {
         if (!reset_token) throw new BadRequestException('Reset token is required');
         try {
-            const {newPassword, confirmationNewPassword} = resetPasswordDto
-            const message = await this.authService.changePassword(newPassword, confirmationNewPassword, reset_token)
+            const {newPassword, confirmPassword} = resetPasswordDto
+            const message = await this.authService.changePassword({newPassword, confirmPassword, reset_token})
             return {message}
         } catch (error) {
             throw error
